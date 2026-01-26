@@ -88,9 +88,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto shadow-2xl relative">
+    <div className="h-screen bg-gray-50 flex flex-col max-w-lg mx-auto shadow-2xl relative">
       {/* Main Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
         {currentTab === 'agenda' && <Agenda currentUser={user} />}
         {currentTab === 'calendar' && <CalendarView currentUser={user} />}
         {currentTab === 'profile' && <Profile user={user} onUpdate={handleUpdateUser} onLogout={handleLogout} />}
