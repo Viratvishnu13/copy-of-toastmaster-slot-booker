@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => {
         },
         // Copy static assets properly
         copyPublicDir: true,
+        // Add source maps for debugging (optional, can be removed in production)
+        sourcemap: false,
       }
     };
 });

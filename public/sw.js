@@ -1,5 +1,12 @@
-const CACHE_NAME = 'tm-booker-v5';
+// Cache version with timestamp for automatic invalidation
+const CACHE_VERSION = 'tm-booker-v6';
+const CACHE_NAME = `${CACHE_VERSION}-${Date.now()}`;
 const BASE_PATH = '/copy-of-toastmaster-slot-booker';
+
+// Check if we're in development mode (localhost or 127.0.0.1)
+const isDevelopment = self.location.hostname === 'localhost' || 
+                      self.location.hostname === '127.0.0.1' ||
+                      self.location.hostname.includes('localhost');
 
 // Assets to cache - using relative paths for GitHub Pages
 const urlsToCache = [
@@ -13,43 +20,70 @@ const urlsToCache = [
 
 // Install SW and cache static assets
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
+  console.log('🔧 Service Worker installing...', CACHE_NAME);
+  
+  // In development, skip waiting immediately for faster updates
+  // In production, wait for activation
+  if (isDevelopment) {
+    self.skipWaiting();
+  }
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Caching assets:', urlsToCache);
+        console.log('📦 Caching assets:', urlsToCache);
         // Don't fail if some URLs fail to cache (external CDNs might block)
         return Promise.all(
           urlsToCache.map(url => 
             cache.add(url).catch(err => {
-              console.warn(`Failed to cache ${url}:`, err);
+              console.warn(`⚠️ Failed to cache ${url}:`, err);
             })
           )
         );
       })
+      .then(() => {
+        // Skip waiting after cache is populated (faster updates)
+        if (!isDevelopment) {
+          self.skipWaiting();
+        }
+      })
       .catch(err => {
-        console.error('Cache open failed:', err);
+        console.error('❌ Cache open failed:', err);
+        // Still skip waiting even if cache fails
+        self.skipWaiting();
       })
   );
-  self.skipWaiting();
 });
 
 // Activate SW and remove old caches
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
+  console.log('✅ Service Worker activating...', CACHE_NAME);
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
+    Promise.all([
+      // Delete ALL old caches (including old versions)
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            // Delete if it's an old version or not the current cache
+            if (cacheName.startsWith('tm-booker-') && cacheName !== CACHE_NAME) {
+              console.log('🗑️ Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Claim all clients immediately (take control of all pages)
+      self.clients.claim()
+    ]).then(() => {
+      console.log('✅ Service Worker activated and ready');
+      // Notify all clients that SW is ready
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_ACTIVATED', cacheName: CACHE_NAME });
+        });
+      });
     })
   );
-  self.clients.claim();
 });
 
 // 1. CLICK LISTENER: Focuses the app window when user clicks the notification
@@ -99,43 +133,45 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For app assets: Cache first strategy
-  event.respondWith(
-    caches.match(request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-
-        // Clone the request because it's a one-time use stream
-        const fetchRequest = request.clone();
-
-        return fetch(fetchRequest)
-          .then((response) => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type === 'error') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            // Cache successful responses
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                // Cache app assets
-                if (url.pathname.includes(BASE_PATH) || url.hostname === 'cdn.tailwindcss.com') {
-                  cache.put(request, responseToCache);
-                }
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // Network failed, try cache
-            return caches.match(request);
-          });
+  // For app assets: Network First strategy (better for development/testing)
+  // In development, always fetch fresh. In production, try network first, fallback to cache
+  if (isDevelopment) {
+    // Development: Network only, don't cache aggressively
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Only use cache if network completely fails
+        return caches.match(request);
       })
-  );
+    );
+  } else {
+    // Production: Network First, then Cache
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Check if we received a valid response
+          if (response && response.status === 200 && response.type !== 'error') {
+            // Clone the response for caching
+            const responseToCache = response.clone();
+            
+            // Cache successful responses in background (don't block)
+            caches.open(CACHE_NAME).then((cache) => {
+              // Only cache app assets, not external resources
+              if (url.pathname.includes(BASE_PATH) || url.hostname === 'cdn.tailwindcss.com') {
+                cache.put(request, responseToCache).catch(err => {
+                  console.warn('Cache put failed:', err);
+                });
+              }
+            });
+            
+            return response;
+          }
+          // If network response is invalid, try cache
+          return caches.match(request);
+        })
+        .catch(() => {
+          // Network failed, try cache
+          return caches.match(request);
+        })
+    );
+  }
 });

@@ -27,6 +27,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
   });
   const [sendingNotif, setSendingNotif] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [clearingCache, setClearingCache] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +64,42 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
     setSendingNotif(false);
     setSuccessMessage('Test notification sent!');
     setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handleClearCache = async () => {
+    if (!window.confirm('Clear all cached data? This will force a fresh reload of the app.')) {
+      return;
+    }
+    
+    setClearingCache(true);
+    try {
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('✅ All caches cleared');
+      }
+      
+      // Unregister service worker
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+        console.log('✅ Service workers unregistered');
+      }
+      
+      // Clear localStorage (optional - be careful with this)
+      // localStorage.clear();
+      
+      setSuccessMessage('Cache cleared! Refreshing page...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      setSuccessMessage('Error clearing cache. Please try manually in browser settings.');
+      setClearingCache(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   };
 
   const handleSendCustom = async () => {
@@ -434,6 +471,21 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
             <p className="text-sm text-blue-900">
               <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. You'll receive reminders for meetings, your assigned roles, and announcements from admins.
             </p>
+          </div>
+
+          {/* Cache Management */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">Cache Management</h5>
+            <p className="text-xs text-gray-600 mb-3">
+              If you're seeing old content or having issues, clear the cache to force a fresh reload.
+            </p>
+            <button
+              onClick={handleClearCache}
+              disabled={clearingCache}
+              className="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+            >
+              {clearingCache ? 'Clearing...' : '🗑️ Clear Cache & Reload'}
+            </button>
           </div>
         </div>
 
