@@ -159,7 +159,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
         const pushServerUrl = import.meta.env.VITE_PUSH_SERVER_URL || '';
         if (pushServerUrl) {
           try {
-            await fetch(`${pushServerUrl}/api/send-push-all`, {
+            // Normalize URL (remove trailing slash to avoid double slashes)
+            const normalizedUrl = pushServerUrl.replace(/\/$/, '');
+            await fetch(`${normalizedUrl}/api/send-push-all`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -193,7 +195,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
           const pushServerUrl = import.meta.env.VITE_PUSH_SERVER_URL || '';
           if (pushServerUrl) {
             try {
-              await fetch(`${pushServerUrl}/api/send-push`, {
+              // Normalize URL (remove trailing slash to avoid double slashes)
+              const normalizedUrl = pushServerUrl.replace(/\/$/, '');
+              await fetch(`${normalizedUrl}/api/send-push`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

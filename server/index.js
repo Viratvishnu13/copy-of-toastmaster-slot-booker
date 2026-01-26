@@ -18,14 +18,32 @@ const webpush = require('web-push');
 const app = express();
 app.use(express.json());
 
-// CORS middleware
+// CORS middleware - Handle preflight requests properly
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://viratvishnu13.github.io',
+    'http://localhost:3000',
+    'http://localhost:4173'
+  ];
+  
+  // Allow requests from GitHub Pages or localhost
+  if (origin && (allowedOrigins.some(allowed => origin.includes(allowed)) || origin.includes('github.io'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
   }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   next();
 });
 
