@@ -116,7 +116,7 @@ function App() {
     <div className="h-screen bg-gray-50 flex flex-col max-w-lg mx-auto shadow-2xl relative">
       {/* Install Prompt Banner */}
       {showInstallPrompt && (
-        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-30">
+        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-40 fixed top-0 left-0 right-0 max-w-lg mx-auto shadow-lg">
           <span className="text-sm font-semibold">Install Toastmasters Booker app?</span>
           <div className="flex gap-2">
             <button
@@ -135,43 +135,43 @@ function App() {
         </div>
       )}
 
-      {/* Main Content - Scrollable with padding for fixed footer */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
+      {/* Main Content - Scrollable with padding for fixed footer and optional banner */}
+      <div className={`flex-1 overflow-y-auto no-scrollbar pb-24 ${showInstallPrompt ? 'pt-16' : ''}`}>
         {currentTab === 'agenda' && <Agenda currentUser={user} />}
         {currentTab === 'calendar' && <CalendarView currentUser={user} />}
         {currentTab === 'profile' && <Profile user={user} onUpdate={handleUpdateUser} onLogout={handleLogout} />}
       </div>
 
       {/* Bottom Navigation - Fixed Footer */}
-      <div className="bg-white border-t border-gray-200 flex justify-around items-center h-16 shrink-0 z-20">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 flex justify-around items-center h-20 z-30 shadow-2xl shadow-black/20">
         <button 
           onClick={() => setCurrentTab('agenda')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'agenda' ? 'text-blue-900' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-colors ${currentTab === 'agenda' ? 'text-blue-900 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <span className="text-[10px] font-bold">Agenda</span>
+          <span className="text-xs font-bold">Agenda</span>
         </button>
 
         <button 
           onClick={() => setCurrentTab('calendar')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'calendar' ? 'text-blue-900' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-colors ${currentTab === 'calendar' ? 'text-blue-900 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span className="text-[10px] font-bold">Events</span>
+          <span className="text-xs font-bold">Events</span>
         </button>
 
         <button 
           onClick={() => setCurrentTab('profile')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'profile' ? 'text-blue-900' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-colors ${currentTab === 'profile' ? 'text-blue-900 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          <span className="text-[10px] font-bold">Profile</span>
+          <span className="text-xs font-bold">Profile</span>
         </button>
       </div>
     </div>

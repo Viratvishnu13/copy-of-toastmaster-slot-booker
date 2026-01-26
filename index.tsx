@@ -14,14 +14,24 @@ if ('serviceWorker' in navigator) {
     const basePath = ((import.meta as any).env.BASE_URL || '/').replace(/\/$/, '');
     const swPath = basePath ? `${basePath}/sw.js` : '/sw.js';
     
-    navigator.serviceWorker.register(swPath)
+    console.log('🔧 Registering Service Worker at:', swPath);
+    console.log('📍 Base path:', basePath);
+    
+    navigator.serviceWorker.register(swPath, { scope: basePath || '/' })
       .then((registration) => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        console.log('✅ ServiceWorker registration successful');
+        console.log('📦 Scope:', registration.scope);
+        console.log('🔄 Active:', registration.active);
+        console.log('⏳ Installing:', registration.installing);
+        console.log('⌛ Waiting:', registration.waiting);
       })
       .catch((error) => {
-        console.error('ServiceWorker registration failed: ', error);
+        console.error('❌ ServiceWorker registration failed:', error);
+        console.error('Error details:', error.message);
       });
   });
+} else {
+  console.warn('⚠️ Service Workers are not supported in this browser');
 }
 
 const root = ReactDOM.createRoot(rootElement);
