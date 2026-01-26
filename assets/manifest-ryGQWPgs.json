@@ -13,7 +13,7 @@
       "type": "image/png"
     }
   ],
-  "start_url": "/copy-of-toastmaster-slot-booker/",
+  "start_url": "./",
   "scope": "/copy-of-toastmaster-slot-booker/",
   "display": "standalone",
   "theme_color": "#1e3a8a",
