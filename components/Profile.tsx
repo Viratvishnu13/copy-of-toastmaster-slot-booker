@@ -23,7 +23,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
     title: '',
     body: '',
     sendToAll: true,
-    targetUserId: ''
+    targetUserIds: [] // Changed to support multiple users
   });
   const [sendingNotif, setSendingNotif] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -76,6 +76,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
       return;
     }
 
+    if (!customMessage.sendToAll && customMessage.targetUserIds.length === 0) {
+      alert('Please select at least one user or check "Send to All Users"');
+      return;
+    }
+
     if (permissionStatus !== 'granted') {
       alert('Notifications not enabled');
       return;
@@ -85,29 +90,45 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
 
     try {
       // Send notification to database
-      const targetUserId = customMessage.sendToAll ? null : customMessage.targetUserId || null;
-      
-      const { error } = await supabase
-        .from('notifications')
-        .insert({
-          title: customMessage.title,
-          body: customMessage.body,
-          sent_by_user_id: user.id,
-          target_user_id: targetUserId,
-          created_at: new Date().toISOString()
-        });
+      if (customMessage.sendToAll) {
+        // Send to all users (target_user_id = null)
+        const { error } = await supabase
+          .from('notifications')
+          .insert({
+            title: customMessage.title,
+            body: customMessage.body,
+            sent_by_user_id: user.id,
+            target_user_id: null,
+            created_at: new Date().toISOString()
+          });
 
-      if (error) {
-        throw error;
-      }
-
-      // Also send immediately to self if testing
-      if (customMessage.sendToAll || user.id === customMessage.targetUserId) {
+        if (error) throw error;
+        
         await NotificationService.sendTest(customMessage.title, customMessage.body);
+      } else {
+        // Send to selected users (one record per user)
+        for (const targetUserId of customMessage.targetUserIds) {
+          const { error } = await supabase
+            .from('notifications')
+            .insert({
+              title: customMessage.title,
+              body: customMessage.body,
+              sent_by_user_id: user.id,
+              target_user_id: targetUserId,
+              created_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
+          
+          // Send to self if user is in the selected list
+          if (targetUserId === user.id) {
+            await NotificationService.sendTest(customMessage.title, customMessage.body);
+          }
+        }
       }
 
       setSuccessMessage('Notification sent successfully!');
-      setCustomMessage({ title: '', body: '', sendToAll: true, targetUserId: '' });
+      setCustomMessage({ title: '', body: '', sendToAll: true, targetUserIds: [] });
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -297,14 +318,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
                 <h5 className="font-semibold text-gray-900 mb-2 text-sm">Send Custom Message</h5>
                 
                 <div className="mb-3">
-                   <label className="flex items-center text-sm text-gray-700 mb-2">
+                   <label className="flex items-center text-sm text-gray-700 mb-3">
                      <input
                        type="checkbox"
                        checked={customMessage.sendToAll}
                        onChange={(e) => setCustomMessage({
                          ...customMessage,
                          sendToAll: e.target.checked,
-                         targetUserId: e.target.checked ? '' : customMessage.targetUserId
+                         targetUserIds: e.target.checked ? [] : customMessage.targetUserIds
                        })}
                        className="mr-2 w-4 h-4"
                      />
@@ -312,16 +333,30 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
                    </label>
                    
                    {!customMessage.sendToAll && (
-                     <select
-                       value={customMessage.targetUserId}
-                       onChange={(e) => setCustomMessage({ ...customMessage, targetUserId: e.target.value })}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                     >
-                       <option value="">Select a user</option>
-                       {allUsers.map(u => (
-                         <option key={u.id} value={u.id}>{u.name}</option>
-                       ))}
-                     </select>
+                     <div className="space-y-2 mb-3">
+                       <p className="text-xs text-gray-600 font-semibold">Select one or more users:</p>
+                       <div className="grid grid-cols-1 max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-gray-50">
+                         {allUsers.filter(u => !u.isGuest).map(u => (
+                           <label key={u.id} className="flex items-center px-3 py-2 hover:bg-gray-100 border-b border-gray-200 last:border-b-0 cursor-pointer">
+                             <input
+                               type="checkbox"
+                               checked={customMessage.targetUserIds.includes(u.id)}
+                               onChange={(e) => {
+                                 const newIds = e.target.checked
+                                   ? [...customMessage.targetUserIds, u.id]
+                                   : customMessage.targetUserIds.filter(id => id !== u.id);
+                                 setCustomMessage({ ...customMessage, targetUserIds: newIds });
+                               }}
+                               className="mr-2 w-4 h-4 cursor-pointer"
+                             />
+                             <span className="text-sm text-gray-700">{u.name}</span>
+                           </label>
+                         ))}
+                       </div>
+                       {customMessage.targetUserIds.length > 0 && (
+                         <p className="text-xs text-blue-600 font-medium">✓ {customMessage.targetUserIds.length} user(s) selected</p>
+                       )}
+                     </div>
                    )}
                 </div>
 
