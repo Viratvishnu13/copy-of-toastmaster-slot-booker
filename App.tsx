@@ -21,6 +21,15 @@ function App() {
       const storedUser = await dataService.getCurrentSession();
       if (storedUser) {
         setUser(storedUser);
+        // Register device with restored user
+        if (!storedUser.isGuest) {
+          const { DeviceService } = await import('./services/deviceService');
+          DeviceService.registerDevice(storedUser.id);
+        }
+      } else {
+        // Register device as guest/unregistered
+        const { DeviceService } = await import('./services/deviceService');
+        DeviceService.registerDevice(null);
       }
       setLoadingSession(false);
     };
@@ -97,11 +106,21 @@ function App() {
     };
   }, [user]);
 
-  const handleLogin = (loggedInUser: User) => {
+  const handleLogin = async (loggedInUser: User) => {
     setUser(loggedInUser);
+    // Register device with logged-in user
+    if (!loggedInUser.isGuest) {
+      const { DeviceService } = await import('./services/deviceService');
+      DeviceService.registerDevice(loggedInUser.id);
+    }
   };
 
   const handleLogout = async () => {
+    // Clear device registration
+    if (user && !user.isGuest) {
+      const { DeviceService } = await import('./services/deviceService');
+      await DeviceService.clearDevice();
+    }
     await dataService.logout();
     setUser(null);
   };

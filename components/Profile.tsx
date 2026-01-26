@@ -28,6 +28,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
   const [sendingNotif, setSendingNotif] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [clearingCache, setClearingCache] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'subscribed' | 'not-subscribed' | 'unsupported' | 'checking'>('checking');
+  const [subscribingPush, setSubscribingPush] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +42,19 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
     } else {
         dataService.getUsers().then(setAllUsers);
     }
-  }, [user.isAdmin]);
+
+    // Check push subscription status
+    const checkPushStatus = async () => {
+      if (!user.isGuest) {
+        const { PushService } = await import('../services/pushService');
+        const status = await PushService.getSubscriptionStatus();
+        setPushStatus(status);
+      } else {
+        setPushStatus('unsupported');
+      }
+    };
+    checkPushStatus();
+  }, [user.isAdmin, user.isGuest]);
 
   const handleRequestPermission = async () => {
     const granted = await NotificationService.requestPermission();
@@ -123,7 +137,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
       return;
     }
 
-    setSendingNotif(true);
+      setSendingNotif(true);
 
     try {
       // Send notification to database
@@ -141,6 +155,24 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
 
         if (error) throw error;
         
+        // Also send push notifications if server is configured
+        const pushServerUrl = import.meta.env.VITE_PUSH_SERVER_URL || '';
+        if (pushServerUrl) {
+          try {
+            await fetch(`${pushServerUrl}/api/send-push-all`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: customMessage.title,
+                body: customMessage.body
+              })
+            });
+          } catch (pushError) {
+            console.warn('Push notification server not available:', pushError);
+            // Continue even if push fails
+          }
+        }
+        
         await NotificationService.sendTest(customMessage.title, customMessage.body);
       } else {
         // Send to selected users (one record per user)
@@ -156,6 +188,24 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
             });
 
           if (error) throw error;
+          
+          // Send push notification if server is configured
+          const pushServerUrl = import.meta.env.VITE_PUSH_SERVER_URL || '';
+          if (pushServerUrl) {
+            try {
+              await fetch(`${pushServerUrl}/api/send-push`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: targetUserId,
+                  title: customMessage.title,
+                  body: customMessage.body
+                })
+              });
+            } catch (pushError) {
+              console.warn('Push notification server not available:', pushError);
+            }
+          }
           
           // Send to self if user is in the selected list
           if (targetUserId === user.id) {
@@ -448,9 +498,118 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
           )}
 
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-            <p className="text-sm text-blue-900">
-              <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. You'll receive reminders for meetings, your assigned roles, and announcements from admins.
+            <p className="text-sm text-blue-900 mb-3">
+              <strong>💡 Tip:</strong> Notifications will appear when you minimize the app or switch tabs. You'll receive reminders for meetings, your assigned roles, and announcements from admins.
             </p>
+            
+            {/* Notification Behavior Setting */}
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <label className="flex items-center text-sm text-blue-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localStorage.getItem('notifications_suppress_when_visible') !== 'false'}
+                  onChange={(e) => {
+                    localStorage.setItem('notifications_suppress_when_visible', e.target.checked ? 'true' : 'false');
+                    setSuccessMessage(e.target.checked 
+                      ? 'Notifications will be hidden when app is open'
+                      : 'Notifications will show even when app is open');
+                    setTimeout(() => setSuccessMessage(''), 3000);
+                  }}
+                  className="mr-2 w-4 h-4"
+                />
+                <span>Hide notifications when app is open (recommended)</span>
+              </label>
+              <p className="text-xs text-blue-700 mt-1 ml-6">
+                Uncheck to receive notifications even when viewing the app
+              </p>
+            </div>
+            
+            {/* Push Notifications (Background) */}
+            {!user.isGuest && (
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <h5 className="text-xs font-semibold text-blue-900 mb-2 uppercase tracking-wider">Background Push Notifications</h5>
+                <p className="text-xs text-blue-700 mb-3">
+                  Enable push notifications to receive alerts even when the browser is closed (requires PWA installation).
+                </p>
+                
+                {pushStatus === 'checking' && (
+                  <p className="text-xs text-blue-600">Checking status...</p>
+                )}
+                
+                {pushStatus === 'unsupported' && (
+                  <p className="text-xs text-orange-600">
+                    Push notifications are not supported in this browser. Please use Chrome, Firefox, or Edge.
+                  </p>
+                )}
+                
+                {pushStatus === 'not-subscribed' && (
+                  <button
+                    onClick={async () => {
+                      setSubscribingPush(true);
+                      try {
+                        const { PushService } = await import('../services/pushService');
+                        const subscription = await PushService.subscribe(user.id);
+                        if (subscription) {
+                          setPushStatus('subscribed');
+                          setSuccessMessage('Push notifications enabled! You\'ll receive notifications even when the browser is closed.');
+                          setTimeout(() => setSuccessMessage(''), 5000);
+                        } else {
+                          setSuccessMessage('Failed to enable push notifications. Please check browser permissions.');
+                          setTimeout(() => setSuccessMessage(''), 3000);
+                        }
+                      } catch (error) {
+                        console.error('Push subscription error:', error);
+                        setSuccessMessage('Error enabling push notifications.');
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                      } finally {
+                        setSubscribingPush(false);
+                      }
+                    }}
+                    disabled={subscribingPush || permissionStatus !== 'granted'}
+                    className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                  >
+                    {subscribingPush ? 'Enabling...' : '🔔 Enable Push Notifications'}
+                  </button>
+                )}
+                
+                {pushStatus === 'subscribed' && (
+                  <div>
+                    <p className="text-xs text-green-700 font-medium mb-2">✓ Push notifications are enabled!</p>
+                    <button
+                      onClick={async () => {
+                        setSubscribingPush(true);
+                        try {
+                          const { PushService } = await import('../services/pushService');
+                          const unsubscribed = await PushService.unsubscribe();
+                          if (unsubscribed) {
+                            setPushStatus('not-subscribed');
+                            setSuccessMessage('Push notifications disabled.');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                          }
+                        } catch (error) {
+                          console.error('Push unsubscribe error:', error);
+                          setSuccessMessage('Error disabling push notifications.');
+                          setTimeout(() => setSuccessMessage(''), 3000);
+                        } finally {
+                          setSubscribingPush(false);
+                        }
+                      }}
+                      disabled={subscribingPush}
+                      className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                    >
+                      {subscribingPush ? 'Disabling...' : 'Disable Push Notifications'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Background Notifications Info */}
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <p className="text-xs text-blue-800">
+                <strong>📱 Note:</strong> Regular notifications work when the browser is minimized. Push notifications (above) work even when the browser is completely closed, but require the app to be installed as a PWA.
+              </p>
+            </div>
           </div>
 
           {/* Cache Management */}

@@ -34,8 +34,11 @@ export const NotificationService = {
       if (!granted) return;
     }
 
-    // SMART CHECK: If the user is actively looking at the app, don't show a system notification.
-    if (document.visibilityState === 'visible') {
+    // OPTIONAL: Suppress notifications when app is focused
+    // Set this to false if you want notifications even when app is visible
+    const suppressWhenVisible = localStorage.getItem('notifications_suppress_when_visible') !== 'false';
+    
+    if (suppressWhenVisible && document.visibilityState === 'visible') {
         console.log("App is focused. Suppressing system notification:", title);
         return;
     }

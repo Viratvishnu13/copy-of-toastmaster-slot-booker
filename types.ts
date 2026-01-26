@@ -55,6 +55,15 @@ export interface NotificationLog {
   created_at: string;
 }
 
+export interface Device {
+  id: string; // Device fingerprint/ID
+  user_id: string | null; // Currently logged-in user (null if guest or logged out)
+  last_login_at: string; // Last time a user logged in on this device
+  user_agent: string; // Browser info
+  created_at: string;
+  updated_at: string;
+}
+
 export const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 export const DEFAULT_GUEST_AVATAR = "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
 

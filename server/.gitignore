@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+*.log
+firebase-service-account.json
+.vercel
+.netlify
+
+.vercel
