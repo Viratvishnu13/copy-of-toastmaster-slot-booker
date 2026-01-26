@@ -116,6 +116,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
       setSendingNotif(false);
     }
   };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setMessage('Passwords do not match');
@@ -140,8 +142,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Logic to resize image and convert to Base64
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
