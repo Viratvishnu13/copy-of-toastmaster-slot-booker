@@ -38,9 +38,9 @@ export const NotificationService = {
       // Changed to 'any' because 'vibrate' is sometimes missing from standard NotificationOptions type definition
       const options: any = {
         body,
-        icon: icon || 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        icon: icon || './logo.png',
         vibrate: [200, 100, 200],
-        badge: 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        badge: './logo.png',
         tag: 'tm-booker-notification', // Tag prevents stacking identical notifications
         requireInteraction: true // Keeps notification on screen until user clicks
       };
@@ -94,9 +94,9 @@ export const NotificationService = {
     if (Notification.permission === 'granted') {
       const options: any = {
         body,
-        icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        icon: './logo.png',
         vibrate: [200, 100, 200],
-        badge: 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        badge: './logo.png',
         tag: 'tm-test-notification',
         requireInteraction: true
       };
