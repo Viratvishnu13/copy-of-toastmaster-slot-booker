@@ -50,6 +50,7 @@ export interface NotificationLog {
   id: string;
   title: string;
   body: string;
+  sent_by_user_id?: string; // Optional: who sent the notification
   target_user_id: string | null; // null means 'everyone'
   created_at: string;
 }

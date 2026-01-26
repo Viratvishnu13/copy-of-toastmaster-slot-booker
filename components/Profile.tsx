@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
 import { dataService } from '../services/store';
 import { NotificationService } from '../services/notificationService';
+import { supabase } from '../services/supabaseClient';
 
 interface ProfileProps {
   user: User;
@@ -14,35 +15,107 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [notificationStatus, setNotificationStatus] = useState<string>('default');
+  const [permissionStatus, setPermissionStatus] = useState(NotificationService.getPermissionStatus());
   const [allUsers, setAllUsers] = useState<User[]>([]); // For Admin Directory
   
-  // Admin Notification State
-  const [notifTitle, setNotifTitle] = useState('');
-  const [notifBody, setNotifBody] = useState('');
-  const [notifTarget, setNotifTarget] = useState<string>('all');
+  // Notification Center State
+  const [customMessage, setCustomMessage] = useState({
+    title: '',
+    body: '',
+    sendToAll: true,
+    targetUserId: ''
+  });
   const [sendingNotif, setSendingNotif] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setNotificationStatus(NotificationService.getPermissionStatus());
+    setPermissionStatus(NotificationService.getPermissionStatus());
     
-    // If admin, fetch all users for the directory
+    // Fetch all users for the directory/targeting
     if (user.isAdmin) {
+        dataService.getUsers().then(setAllUsers);
+    } else {
         dataService.getUsers().then(setAllUsers);
     }
   }, [user.isAdmin]);
 
-  const handleEnableNotifications = async () => {
+  const handleRequestPermission = async () => {
     const granted = await NotificationService.requestPermission();
-    setNotificationStatus(granted ? 'granted' : 'denied');
+    setPermissionStatus(granted ? 'granted' : 'denied');
     if (granted) {
-      NotificationService.send('Notifications Enabled', 'You will now receive reminders for meetings and roles!');
+      setSuccessMessage('Notification permission granted!');
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleSendTest = async () => {
+    if (permissionStatus !== 'granted') {
+      alert('Please enable notifications first');
+      return;
+    }
+    setSendingNotif(true);
+    await NotificationService.sendTest(
+      customMessage.title || undefined,
+      customMessage.body || undefined
+    );
+    setSendingNotif(false);
+    setSuccessMessage('Test notification sent!');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handleSendCustom = async () => {
+    if (!customMessage.title.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+    
+    if (!customMessage.body.trim()) {
+      alert('Please enter a message body');
+      return;
+    }
+
+    if (permissionStatus !== 'granted') {
+      alert('Notifications not enabled');
+      return;
+    }
+
+    setSendingNotif(true);
+
+    try {
+      // Send notification to database
+      const targetUserId = customMessage.sendToAll ? null : customMessage.targetUserId || null;
+      
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          title: customMessage.title,
+          body: customMessage.body,
+          sent_by_user_id: user.id,
+          target_user_id: targetUserId,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Also send immediately to self if testing
+      if (customMessage.sendToAll || user.id === customMessage.targetUserId) {
+        await NotificationService.sendTest(customMessage.title, customMessage.body);
+      }
+
+      setSuccessMessage('Notification sent successfully!');
+      setCustomMessage({ title: '', body: '', sendToAll: true, targetUserId: '' });
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      alert(`Error sending notification: ${String(error)}`);
+    } finally {
+      setSendingNotif(false);
+    }
+  };
     e.preventDefault();
     if (password !== confirmPassword) {
       setMessage('Passwords do not match');
@@ -67,27 +140,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
     }
   };
 
-  const handleSendNotification = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setSendingNotif(true);
-      
-      const targetId = notifTarget === 'all' ? null : notifTarget;
-      
-      const success = await dataService.sendAdminNotification(notifTitle, notifBody, targetId, user.id);
-      
-      if (success) {
-          alert("Notification Sent! Users currently online will see it immediately.");
-          setNotifTitle('');
-          setNotifBody('');
-          setNotifTarget('all');
-      } else {
-          alert("Failed to send notification.");
-      }
-      setSendingNotif(false);
-  };
-
-  // Logic to resize image and convert to Base64
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -142,7 +196,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
   };
 
   return (
-    <div className="pb-20">
+    <div className="pb-4">
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
         <h2 className="text-xl font-bold text-gray-800">My Profile</h2>
       </div>
@@ -178,84 +232,129 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
           {user.isGuest && <span className="mt-2 text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Guest Account</span>}
         </div>
 
-        {/* Notification Settings */}
+        {/* Notification Center */}
         {!user.isGuest && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-             <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Preferences</h4>
-             <div className="flex items-center justify-between">
-                <div>
-                   <p className="text-sm font-bold text-gray-900">Push Notifications</p>
-                   <p className="text-xs text-gray-500">Get reminders for meetings and your roles</p>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-blue-100 ring-1 ring-blue-100">
+             <h4 className="text-sm font-semibold text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+                Notification Center
+             </h4>
+
+             {/* Permission Status */}
+             <div className="mb-4 p-3 rounded-lg bg-gray-100">
+                <div className="text-sm text-gray-600 mb-2">
+                   <strong>Status:</strong> <span className="capitalize font-semibold">{permissionStatus}</span>
                 </div>
-                {notificationStatus === 'granted' ? (
-                  <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200">Enabled</span>
-                ) : (
-                  <button 
-                    onClick={handleEnableNotifications}
-                    className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 hover:bg-blue-100"
-                  >
-                    Enable
-                  </button>
+                {permissionStatus !== 'granted' && (
+                   <button
+                     onClick={handleRequestPermission}
+                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium text-sm"
+                   >
+                     Enable Notifications
+                   </button>
                 )}
+             </div>
+
+             {successMessage && (
+               <div className="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">
+                 ✓ {successMessage}
+               </div>
+             )}
+
+             {/* Test Notification */}
+             <div className="mb-4 pb-4 border-b border-gray-200">
+                <h5 className="font-semibold text-gray-900 mb-2 text-sm">Test Notification</h5>
+                <div className="space-y-2 mb-3">
+                   <input
+                     type="text"
+                     placeholder="Custom title (optional)"
+                     value={customMessage.title}
+                     onChange={(e) => setCustomMessage({ ...customMessage, title: e.target.value })}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                   />
+                   <textarea
+                     placeholder="Custom message (optional)"
+                     value={customMessage.body}
+                     onChange={(e) => setCustomMessage({ ...customMessage, body: e.target.value })}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none h-16"
+                   />
+                </div>
+                <button
+                   onClick={handleSendTest}
+                   disabled={sendingNotif || permissionStatus !== 'granted'}
+                   className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                >
+                   {sendingNotif ? 'Sending...' : '🧪 Send Test Notification'}
+                </button>
+             </div>
+
+             {/* Send Custom Message */}
+             <div>
+                <h5 className="font-semibold text-gray-900 mb-2 text-sm">Send Custom Message</h5>
+                
+                <div className="mb-3">
+                   <label className="flex items-center text-sm text-gray-700 mb-2">
+                     <input
+                       type="checkbox"
+                       checked={customMessage.sendToAll}
+                       onChange={(e) => setCustomMessage({
+                         ...customMessage,
+                         sendToAll: e.target.checked,
+                         targetUserId: e.target.checked ? '' : customMessage.targetUserId
+                       })}
+                       className="mr-2 w-4 h-4"
+                     />
+                     Send to All Users
+                   </label>
+                   
+                   {!customMessage.sendToAll && (
+                     <select
+                       value={customMessage.targetUserId}
+                       onChange={(e) => setCustomMessage({ ...customMessage, targetUserId: e.target.value })}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                     >
+                       <option value="">Select a user</option>
+                       {allUsers.map(u => (
+                         <option key={u.id} value={u.id}>{u.name}</option>
+                       ))}
+                     </select>
+                   )}
+                </div>
+
+                <input
+                   type="text"
+                   placeholder="Title"
+                   value={customMessage.title}
+                   onChange={(e) => setCustomMessage({ ...customMessage, title: e.target.value })}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
+                />
+                <textarea
+                   placeholder="Message body"
+                   value={customMessage.body}
+                   onChange={(e) => setCustomMessage({ ...customMessage, body: e.target.value })}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none h-16 mb-3"
+                />
+                
+                <button
+                   onClick={handleSendCustom}
+                   disabled={sendingNotif || permissionStatus !== 'granted'}
+                   className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                >
+                   {sendingNotif ? 'Sending...' : '📤 Send Message'}
+                </button>
              </div>
           </div>
         )}
-        
-        {/* Admin Notification Console */}
-        {user.isAdmin && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-purple-100 ring-1 ring-purple-100">
-                <h4 className="text-sm font-semibold text-purple-900 mb-4 uppercase tracking-wider flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                    </svg>
-                    Send Announcement
-                </h4>
-                <form onSubmit={handleSendNotification} className="space-y-3">
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Target</label>
-                        <select 
-                            value={notifTarget} 
-                            onChange={(e) => setNotifTarget(e.target.value)}
-                            className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                        >
-                            <option value="all">Everyone</option>
-                            {allUsers.filter(u => u.id !== user.id).map(u => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <input 
-                            type="text" 
-                            placeholder="Title (e.g. Meeting Cancelled!)"
-                            value={notifTitle}
-                            onChange={(e) => setNotifTitle(e.target.value)}
-                            required
-                            className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                        />
-                    </div>
-                    <div>
-                        <textarea 
-                            placeholder="Message body..."
-                            value={notifBody}
-                            onChange={(e) => setNotifBody(e.target.value)}
-                            required
-                            rows={2}
-                            className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                        ></textarea>
-                    </div>
-                    <button 
-                        type="submit"
-                        disabled={sendingNotif}
-                        className="w-full bg-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition disabled:opacity-50"
-                    >
-                        {sendingNotif ? 'Sending...' : 'Send Broadcast'}
-                    </button>
-                    <p className="text-[10px] text-gray-400 text-center">
-                        Note: Users only see this if they have the app open.
-                    </p>
-                </form>
-            </div>
+
+        {/* Notification Settings Summary */}
+        {!user.isGuest && (
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+             <p className="text-sm text-blue-900">
+                <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. Enable in the Notification Center above to get reminders for meetings, roles, and announcements.
+             </p>
+          </div>
         )}
 
         {/* Avatar Settings - Only for Registered Users */}

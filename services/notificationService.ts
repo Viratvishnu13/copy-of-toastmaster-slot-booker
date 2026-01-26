@@ -16,7 +16,19 @@ export const NotificationService = {
 
   // Send a system notification
   send: async (title: string, body: string, icon?: string) => {
-    // 1. SMART CHECK: If the user is actively looking at the app, don't show a system notification.
+    // Check if notifications are supported
+    if (!('Notification' in window)) {
+      console.warn('Notifications not supported in this browser');
+      return;
+    }
+
+    // Request permission if not yet granted
+    if (Notification.permission === 'default') {
+      const granted = await NotificationService.requestPermission();
+      if (!granted) return;
+    }
+
+    // SMART CHECK: If the user is actively looking at the app, don't show a system notification.
     if (document.visibilityState === 'visible') {
         console.log("App is focused. Suppressing system notification:", title);
         return;
@@ -33,12 +45,13 @@ export const NotificationService = {
         requireInteraction: true // Keeps notification on screen until user clicks
       };
 
-      // 2. Use Service Worker if available (Better for PWA/Background)
+      // Use Service Worker if available (Better for PWA/Background)
       if ('serviceWorker' in navigator) {
           try {
             const reg = await navigator.serviceWorker.ready;
-            if (reg) {
+            if (reg && reg.showNotification) {
                 await reg.showNotification(title, options);
+                console.log('Notification sent via Service Worker:', title);
                 return;
             }
           } catch (e) {
@@ -46,8 +59,67 @@ export const NotificationService = {
           }
       }
 
-      // 3. Fallback for standard web pages if SW fails
-      new Notification(title, options);
+      // Fallback for standard web pages if SW fails
+      try {
+        new Notification(title, options);
+        console.log('Notification sent directly:', title);
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
+    }
+  },
+
+  // Test notification - for development/testing
+  sendTest: async (customTitle?: string, customBody?: string) => {
+    const title = customTitle || "🧪 Test Notification";
+    const body = customBody || `This is a test notification sent at ${new Date().toLocaleTimeString()}`;
+    
+    console.log('Sending test notification...', { title, body });
+    
+    // Always send test notifications regardless of visibility
+    if (!('Notification' in window)) {
+      alert('Notifications not supported in this browser');
+      return;
+    }
+
+    // Request permission if not yet granted
+    if (Notification.permission === 'default') {
+      const granted = await NotificationService.requestPermission();
+      if (!granted) {
+        alert('Notification permission denied');
+        return;
+      }
+    }
+
+    if (Notification.permission === 'granted') {
+      const options: any = {
+        body,
+        icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        vibrate: [200, 100, 200],
+        badge: 'https://cdn-icons-png.flaticon.com/512/1165/1165674.png',
+        tag: 'tm-test-notification',
+        requireInteraction: true
+      };
+
+      try {
+        // Try Service Worker first
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg && reg.showNotification) {
+            await reg.showNotification(title, options);
+            console.log('Test notification sent via SW');
+            return;
+          }
+        }
+        // Fallback
+        new Notification(title, options);
+        console.log('Test notification sent directly');
+      } catch (e) {
+        console.error('Test notification failed:', e);
+        alert(`Notification failed: ${String(e)}`);
+      }
+    } else {
+      alert('Notification permission not granted. Enable in browser settings.');
     }
   },
 

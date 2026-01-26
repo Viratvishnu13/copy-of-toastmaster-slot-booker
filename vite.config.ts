@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: "/copy-of-toastmaster-slot-booker/", // <--- ADD THIS LINE
+      base: "/copy-of-toastmaster-slot-booker/",
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -19,6 +19,16 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        // Ensure sw.js and manifest are copied to dist
+        rollupOptions: {
+          input: {
+            main: path.resolve(__dirname, 'index.html'),
+          }
+        },
+        // Copy static assets properly
+        copyPublicDir: true,
       }
     };
 });

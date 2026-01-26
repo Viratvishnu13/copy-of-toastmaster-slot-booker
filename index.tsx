@@ -10,12 +10,16 @@ if (!rootElement) {
 // Service Worker Registration for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
+    // For Vite builds, SW needs the full path from base
+    const basePath = ((import.meta as any).env.BASE_URL || '/').replace(/\/$/, '');
+    const swPath = basePath ? `${basePath}/sw.js` : '/sw.js';
+    
+    navigator.serviceWorker.register(swPath)
       .then((registration) => {
         console.log('ServiceWorker registration successful with scope: ', registration.scope);
       })
       .catch((error) => {
-        console.log('ServiceWorker registration failed: ', error);
+        console.error('ServiceWorker registration failed: ', error);
       });
   });
 }
