@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tm-booker-v3';
+const CACHE_NAME = 'tm-booker-v4';
 const BASE_PATH = '/copy-of-toastmaster-slot-booker';
 
 // Assets to cache - using relative paths for GitHub Pages
