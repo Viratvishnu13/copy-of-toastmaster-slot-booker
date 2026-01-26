@@ -256,7 +256,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
         </div>
 
         {/* Notification Center */}
-        {!user.isGuest && (
+        {user.isAdmin && (
           <div className="bg-white rounded-xl p-6 shadow-sm border border-blue-100 ring-1 ring-blue-100">
              <h4 className="text-sm font-semibold text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -386,7 +386,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
         )}
 
         {/* Notification Settings Summary */}
-        {!user.isGuest && (
+        {user.isAdmin && (
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
              <p className="text-sm text-blue-900">
                 <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. Enable in the Notification Center above to get reminders for meetings, roles, and announcements.
