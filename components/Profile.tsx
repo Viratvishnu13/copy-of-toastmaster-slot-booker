@@ -420,13 +420,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
             {permissionStatus === 'granted' && (
               <div className="mt-2">
                 <p className="text-xs text-green-700 font-medium">✓ Notifications are enabled!</p>
-                <button
-                  onClick={handleSendTest}
-                  disabled={sendingNotif}
-                  className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm mt-2"
-                >
-                  {sendingNotif ? 'Sending...' : '🧪 Send Test Notification'}
-                </button>
               </div>
             )}
           </div>
