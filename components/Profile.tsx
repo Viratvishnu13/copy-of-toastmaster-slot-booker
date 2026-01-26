@@ -323,26 +323,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
                </div>
              )}
 
-             {/* Test Notification */}
-             <div className="mb-4 pb-4 border-b border-gray-200">
-                <h5 className="font-semibold text-gray-900 mb-2 text-sm">Test Notification</h5>
-                <div className="space-y-2 mb-3">
-                   <input
-                     type="text"
-                     placeholder="Custom title (optional)"
-                     value={customMessage.title}
-                     onChange={(e) => setCustomMessage({ ...customMessage, title: e.target.value })}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                   />
-                   <textarea
-                     placeholder="Custom message (optional)"
-                     value={customMessage.body}
-                     onChange={(e) => setCustomMessage({ ...customMessage, body: e.target.value })}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none h-16"
-                   />
-                </div>
-             </div>
-
              {/* Send Custom Message */}
              <div>
                 <h5 className="font-semibold text-gray-900 mb-2 text-sm">Send Custom Message</h5>
