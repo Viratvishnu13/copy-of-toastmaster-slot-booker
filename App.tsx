@@ -113,10 +113,10 @@ function App() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col max-w-lg mx-auto shadow-2xl relative">
+    <div className="relative min-h-screen bg-gray-50 max-w-lg mx-auto shadow-2xl">
       {/* Install Prompt Banner */}
       {showInstallPrompt && (
-        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-40 fixed top-0 left-0 right-0 max-w-lg mx-auto shadow-lg">
+        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-50 fixed top-0 left-0 right-0 max-w-lg mx-auto shadow-lg">
           <span className="text-sm font-semibold">Install Toastmasters Booker app?</span>
           <div className="flex gap-2">
             <button
@@ -136,14 +136,14 @@ function App() {
       )}
 
       {/* Main Content - Scrollable with padding for fixed footer and optional banner */}
-      <div className={`flex-1 overflow-y-auto no-scrollbar pb-24 ${showInstallPrompt ? 'pt-16' : ''}`}>
+      <div className={`pb-24 overflow-y-auto ${showInstallPrompt ? 'pt-16' : ''}`}>
         {currentTab === 'agenda' && <Agenda currentUser={user} />}
         {currentTab === 'calendar' && <CalendarView currentUser={user} />}
         {currentTab === 'profile' && <Profile user={user} onUpdate={handleUpdateUser} onLogout={handleLogout} />}
       </div>
 
       {/* Bottom Navigation - Fixed Footer */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 flex justify-around items-center h-20 z-30 shadow-2xl shadow-black/20">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 flex justify-around items-center h-20 z-50 shadow-2xl">
         <button 
           onClick={() => setCurrentTab('agenda')}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-colors ${currentTab === 'agenda' ? 'text-blue-900 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
