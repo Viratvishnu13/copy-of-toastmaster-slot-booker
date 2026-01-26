@@ -385,11 +385,77 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
           </div>
         )}
 
-        {/* Notification Settings Summary */}
+        {/* Notification Settings - For All Users (Members & Guests) */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+            </svg>
+            Notification Settings
+          </h4>
+
+          {/* Permission Status */}
+          <div className="mb-4 p-3 rounded-lg bg-gray-100">
+            <div className="text-sm text-gray-600 mb-2">
+              <strong>Status:</strong> <span className="capitalize font-semibold">{permissionStatus}</span>
+            </div>
+            {permissionStatus === 'unsupported' && (
+              <p className="text-xs text-red-600 mt-2">
+                Your browser does not support notifications. Please use a modern browser like Chrome, Firefox, or Edge.
+              </p>
+            )}
+            {permissionStatus === 'denied' && (
+              <div className="mt-2">
+                <p className="text-xs text-red-600 mb-2">
+                  Notifications are blocked. To enable:
+                </p>
+                <ol className="text-xs text-gray-600 list-decimal list-inside space-y-1">
+                  <li>Click the lock icon in your browser's address bar</li>
+                  <li>Find "Notifications" and change it to "Allow"</li>
+                  <li>Refresh this page</li>
+                </ol>
+              </div>
+            )}
+            {permissionStatus === 'default' && (
+              <button
+                onClick={handleRequestPermission}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium text-sm mt-2"
+              >
+                Enable Notifications
+              </button>
+            )}
+            {permissionStatus === 'granted' && (
+              <div className="mt-2">
+                <p className="text-xs text-green-700 font-medium">✓ Notifications are enabled!</p>
+                <button
+                  onClick={handleSendTest}
+                  disabled={sendingNotif}
+                  className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm mt-2"
+                >
+                  {sendingNotif ? 'Sending...' : '🧪 Send Test Notification'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {successMessage && (
+            <div className="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">
+              ✓ {successMessage}
+            </div>
+          )}
+
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <p className="text-sm text-blue-900">
+              <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. You'll receive reminders for meetings, your assigned roles, and announcements from admins.
+            </p>
+          </div>
+        </div>
+
+        {/* Notification Settings Summary - Admin Only */}
         {user.isAdmin && (
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
              <p className="text-sm text-blue-900">
-                <strong>💡 Tip:</strong> Notifications will appear when you minimize the app. Enable in the Notification Center above to get reminders for meetings, roles, and announcements.
+                <strong>💡 Admin Tip:</strong> Use the Notification Center above to send custom messages to all users or specific members.
              </p>
           </div>
         )}
@@ -429,7 +495,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Change Password</h4>
               <p className="text-xs text-gray-500 mb-4">
-                Update your Supabase login credentials directly below.
+                Update your login credentials directly below.
               </p>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>

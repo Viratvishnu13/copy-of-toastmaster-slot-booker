@@ -56,13 +56,17 @@ function App() {
     let notificationChannel: any;
 
     const runChecks = async () => {
-      if (user && !user.isGuest) {
-        // 1. Initial Checks for Local Reminders
+      if (user) {
+        // 1. Initial Checks for Local Reminders (for all users including guests)
         const meetings = await dataService.getMeetings();
         NotificationService.checkForNewMeetings(meetings);
-        NotificationService.checkReminders(user, meetings);
+        
+        // Only check role reminders for non-guest users (guests don't have roles)
+        if (!user.isGuest) {
+          NotificationService.checkReminders(user, meetings);
+        }
 
-        // 2. Realtime Subscription for Meetings (New Events)
+        // 2. Realtime Subscription for Meetings (New Events) - All users can receive
         meetingsChannel = supabase.channel('public:meetings')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meetings' }, payload => {
             const newMeeting = payload.new as any;
@@ -71,11 +75,13 @@ function App() {
           .subscribe();
 
         // 3. Realtime Subscription for Custom Admin Notifications
+        // Guests can receive broadcast notifications (target_user_id === null)
         notificationChannel = supabase.channel('public:notifications')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
              const notif = payload.new as NotificationLog;
              // Check if notification is for everyone (null) or specifically for this user
-             if (notif.target_user_id === null || notif.target_user_id === user.id) {
+             // Guests can only receive broadcast notifications (null target)
+             if (notif.target_user_id === null || (!user.isGuest && notif.target_user_id === user.id)) {
                  NotificationService.send(notif.title, notif.body);
              }
           })

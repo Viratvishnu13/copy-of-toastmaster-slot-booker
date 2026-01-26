@@ -40,36 +40,53 @@ export const NotificationService = {
     }
 
     if (Notification.permission === 'granted') {
-      // Changed to 'any' because 'vibrate' is sometimes missing from standard NotificationOptions type definition
-      const options: any = {
+      // Build options with browser-compatible features only
+      const options: NotificationOptions = {
         body,
         icon: icon || getLogoUrl(),
-        vibrate: [200, 100, 200],
-        badge: getLogoUrl(),
         tag: 'tm-booker-notification', // Tag prevents stacking identical notifications
-        requireInteraction: true // Keeps notification on screen until user clicks
+        requireInteraction: false // Changed to false for better compatibility
       };
 
-      // Use Service Worker if available (Better for PWA/Background)
-      if ('serviceWorker' in navigator) {
-          try {
-            const reg = await navigator.serviceWorker.ready;
-            if (reg && reg.showNotification) {
-                await reg.showNotification(title, options);
-                console.log('Notification sent via Service Worker:', title);
-                return;
-            }
-          } catch (e) {
-            console.error("SW Notification failed, falling back", e);
-          }
+      // Add vibrate only if supported (mobile browsers)
+      if ('vibrate' in navigator) {
+        (options as any).vibrate = [200, 100, 200];
       }
 
-      // Fallback for standard web pages if SW fails
+      // Add badge only if supported (some browsers don't support this)
+      // Badge is optional and may cause errors in some browsers
       try {
-        new Notification(title, options);
-        console.log('Notification sent directly:', title);
+        // Use Service Worker if available (Better for PWA/Background)
+        if ('serviceWorker' in navigator) {
+          try {
+            // Wait for service worker to be ready with timeout
+            const reg = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 2000))
+            ]) as ServiceWorkerRegistration;
+            
+            if (reg && reg.showNotification) {
+              await reg.showNotification(title, options);
+              console.log('✅ Notification sent via Service Worker:', title);
+              return;
+            }
+          } catch (e) {
+            console.warn("SW Notification failed, falling back to direct API:", e);
+            // Continue to fallback
+          }
+        }
+
+        // Fallback for standard web pages if SW fails or unavailable
+        const notification = new Notification(title, options);
+        console.log('✅ Notification sent directly:', title);
+        
+        // Auto-close after 5 seconds if user doesn't interact
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
       } catch (e) {
-        console.error('Notification failed:', e);
+        console.error('❌ Notification failed:', e);
+        // Don't throw - just log the error
       }
     }
   },
@@ -83,7 +100,7 @@ export const NotificationService = {
     
     // Always send test notifications regardless of visibility
     if (!('Notification' in window)) {
-      alert('Notifications not supported in this browser');
+      alert('Notifications not supported in this browser. Please use Chrome, Firefox, Edge, or Safari.');
       return;
     }
 
@@ -91,40 +108,58 @@ export const NotificationService = {
     if (Notification.permission === 'default') {
       const granted = await NotificationService.requestPermission();
       if (!granted) {
-        alert('Notification permission denied');
+        alert('Notification permission denied. Please enable notifications in your browser settings.');
         return;
       }
     }
 
     if (Notification.permission === 'granted') {
-      const options: any = {
+      const options: NotificationOptions = {
         body,
         icon: getLogoUrl(),
-        vibrate: [200, 100, 200],
-        badge: getLogoUrl(),
         tag: 'tm-test-notification',
-        requireInteraction: true
+        requireInteraction: false // Changed for better compatibility
       };
 
+      // Add vibrate only if supported
+      if ('vibrate' in navigator) {
+        (options as any).vibrate = [200, 100, 200];
+      }
+
       try {
-        // Try Service Worker first
+        // Try Service Worker first with timeout
         if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.ready;
-          if (reg && reg.showNotification) {
-            await reg.showNotification(title, options);
-            console.log('Test notification sent via SW');
-            return;
+          try {
+            const reg = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 2000))
+            ]) as ServiceWorkerRegistration;
+            
+            if (reg && reg.showNotification) {
+              await reg.showNotification(title, options);
+              console.log('✅ Test notification sent via SW');
+              return;
+            }
+          } catch (e) {
+            console.warn('SW not ready, using direct API:', e);
           }
         }
-        // Fallback
-        new Notification(title, options);
-        console.log('Test notification sent directly');
+        
+        // Fallback to direct Notification API
+        const notification = new Notification(title, options);
+        console.log('✅ Test notification sent directly');
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
       } catch (e) {
-        console.error('Test notification failed:', e);
-        alert(`Notification failed: ${String(e)}`);
+        console.error('❌ Test notification failed:', e);
+        const errorMsg = e instanceof Error ? e.message : String(e);
+        alert(`Notification failed: ${errorMsg}. Please check your browser settings.`);
       }
     } else {
-      alert('Notification permission not granted. Enable in browser settings.');
+      alert('Notification permission not granted. Please enable notifications in your browser settings and refresh the page.');
     }
   },
 
