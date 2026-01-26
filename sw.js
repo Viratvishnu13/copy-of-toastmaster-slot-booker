@@ -111,6 +111,55 @@ self.addEventListener('notificationclose', (event) => {
   console.log('Notification closed:', event.notification.title);
 });
 
+// Handle push notifications (for background notifications)
+self.addEventListener('push', (event) => {
+  console.log('Push notification received:', event);
+  
+  let notificationData = {
+    title: 'New Notification',
+    body: 'You have a new notification',
+    icon: '/copy-of-toastmaster-slot-booker/logo.png',
+    badge: '/copy-of-toastmaster-slot-booker/logo.png',
+    tag: 'tm-push-notification',
+    requireInteraction: false
+  };
+
+  // Parse push data if available
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        badge: data.badge || notificationData.badge,
+        tag: data.tag || notificationData.tag,
+        requireInteraction: data.requireInteraction || false,
+        data: data.data || {}
+      };
+    } catch (e) {
+      // If JSON parsing fails, try text
+      const text = event.data.text();
+      if (text) {
+        notificationData.body = text;
+      }
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      data: notificationData.data,
+      vibrate: [200, 100, 200],
+      actions: notificationData.data?.actions || []
+    })
+  );
+});
+
 // Intercept requests
 self.addEventListener('fetch', (event) => {
   const { request } = event;
