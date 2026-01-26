@@ -107,7 +107,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
         <h2 className="text-xl font-bold text-gray-900">Upcoming Events</h2>
         <p className="text-xs text-gray-600">Don't miss out on special sessions</p>
       </div>

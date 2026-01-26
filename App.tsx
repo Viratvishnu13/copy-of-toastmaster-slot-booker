@@ -12,6 +12,8 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState<'agenda' | 'calendar' | 'profile'>('agenda');
   const [loadingSession, setLoadingSession] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   // Restore Session on Mount
   useEffect(() => {
@@ -24,6 +26,29 @@ function App() {
     };
     restoreSession();
   }, []);
+
+  // PWA Install Prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    if (choiceResult.outcome === 'accepted') {
+      console.log('User accepted PWA installation');
+    }
+    setDeferredPrompt(null);
+    setShowInstallPrompt(false);
+  };
 
   // Trigger Notification Check when User logs in & Setup Realtime Listener
   useEffect(() => {
@@ -89,7 +114,28 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col max-w-lg mx-auto shadow-2xl relative">
-      {/* Main Content - Scrollable */}
+      {/* Install Prompt Banner */}
+      {showInstallPrompt && (
+        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-30">
+          <span className="text-sm font-semibold">Install Toastmasters Booker app?</span>
+          <div className="flex gap-2">
+            <button
+              onClick={handleInstallApp}
+              className="bg-white text-blue-600 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100"
+            >
+              Install
+            </button>
+            <button
+              onClick={() => setShowInstallPrompt(false)}
+              className="text-blue-100 hover:text-white text-sm"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Scrollable with padding for fixed footer */}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
         {currentTab === 'agenda' && <Agenda currentUser={user} />}
         {currentTab === 'calendar' && <CalendarView currentUser={user} />}

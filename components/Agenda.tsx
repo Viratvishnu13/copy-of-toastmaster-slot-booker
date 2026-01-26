@@ -294,7 +294,7 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Weekly Agenda</h2>
           <p className="text-xs text-gray-500">
