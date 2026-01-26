@@ -1,5 +1,10 @@
 import { Meeting, User } from '../types';
 
+const getLogoUrl = () => {
+  const basePath = ((import.meta as any).env.BASE_URL || '/').replace(/\/$/, '');
+  return basePath ? `${basePath}/logo.png` : '/logo.png';
+};
+
 export const NotificationService = {
   // Check permission status
   getPermissionStatus: () => {
@@ -38,9 +43,9 @@ export const NotificationService = {
       // Changed to 'any' because 'vibrate' is sometimes missing from standard NotificationOptions type definition
       const options: any = {
         body,
-        icon: icon || './logo.png',
+        icon: icon || getLogoUrl(),
         vibrate: [200, 100, 200],
-        badge: './logo.png',
+        badge: getLogoUrl(),
         tag: 'tm-booker-notification', // Tag prevents stacking identical notifications
         requireInteraction: true // Keeps notification on screen until user clicks
       };
@@ -94,9 +99,9 @@ export const NotificationService = {
     if (Notification.permission === 'granted') {
       const options: any = {
         body,
-        icon: './logo.png',
+        icon: getLogoUrl(),
         vibrate: [200, 100, 200],
-        badge: './logo.png',
+        badge: getLogoUrl(),
         tag: 'tm-test-notification',
         requireInteraction: true
       };
