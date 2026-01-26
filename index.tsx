@@ -19,8 +19,11 @@ if ('serviceWorker' in navigator) {
       console.log('🔧 Registering Service Worker at:', swPath);
       console.log('📍 Base path:', basePath);
       
+      // Service worker scope must end with trailing slash
+      const swScope = basePath ? `${basePath}/` : '/';
+      
       const registration = await navigator.serviceWorker.register(swPath, { 
-        scope: basePath || '/',
+        scope: swScope,
         updateViaCache: 'none' // Always check for updates
       });
       

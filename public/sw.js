@@ -9,13 +9,12 @@ const isDevelopment = self.location.hostname === 'localhost' ||
                       self.location.hostname.includes('localhost');
 
 // Assets to cache - using relative paths for GitHub Pages
+// Note: External CDNs (Tailwind, Google Fonts) are not cached due to CORS restrictions
 const urlsToCache = [
   BASE_PATH + '/',
   BASE_PATH + '/index.html',
-  BASE_PATH + '/manifest.json',
-  BASE_PATH + '/logo.png',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
+  BASE_PATH + '/manifest.json'
+  // logo.png and external resources are loaded but not cached by SW
 ];
 
 // Install SW and cache static assets
@@ -124,12 +123,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip caching for non-origin requests (external resources)
+  // External CDNs (Tailwind, Google Fonts, etc.) should bypass SW entirely
   if (!url.pathname.includes(BASE_PATH) && url.origin !== self.location.origin) {
-    // For external CDN resources, try network first, fall back to cache
-    event.respondWith(
-      fetch(request)
-        .catch(() => caches.match(request))
-    );
+    // Let browser handle external resources normally (no SW interception)
     return;
   }
 
@@ -138,10 +134,21 @@ self.addEventListener('fetch', (event) => {
   if (isDevelopment) {
     // Development: Network only, don't cache aggressively
     event.respondWith(
-      fetch(request).catch(() => {
-        // Only use cache if network completely fails
-        return caches.match(request);
-      })
+      fetch(request)
+        .then(response => {
+          // Return response even if it's an error (let browser handle it)
+          if (!response || response.status === 404) {
+            // For 404s, don't cache, just return the error response
+            return response;
+          }
+          return response;
+        })
+        .catch(() => {
+          // Only use cache if network completely fails
+          return caches.match(request).then(cachedResponse => {
+            return cachedResponse || new Response('Network error', { status: 408 });
+          });
+        })
     );
   } else {
     // Production: Network First, then Cache
@@ -155,8 +162,8 @@ self.addEventListener('fetch', (event) => {
             
             // Cache successful responses in background (don't block)
             caches.open(CACHE_NAME).then((cache) => {
-              // Only cache app assets, not external resources
-              if (url.pathname.includes(BASE_PATH) || url.hostname === 'cdn.tailwindcss.com') {
+              // Only cache app assets that are part of our base path
+              if (url.pathname.includes(BASE_PATH)) {
                 cache.put(request, responseToCache).catch(err => {
                   console.warn('Cache put failed:', err);
                 });
@@ -165,12 +172,29 @@ self.addEventListener('fetch', (event) => {
             
             return response;
           }
-          // If network response is invalid, try cache
-          return caches.match(request);
+          // If network response is invalid (404, etc.), try cache
+          if (response && response.status === 404) {
+            return caches.match(request).then(cachedResponse => {
+              return cachedResponse || response; // Return 404 if not in cache
+            });
+          }
+          // For other errors, try cache
+          return caches.match(request).then(cachedResponse => {
+            return cachedResponse || response;
+          });
         })
-        .catch(() => {
-          // Network failed, try cache
-          return caches.match(request);
+        .catch((error) => {
+          // Network failed completely, try cache
+          return caches.match(request).then(cachedResponse => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // If no cache and network failed, return a proper error response
+            return new Response('Network error', { 
+              status: 408,
+              statusText: 'Request Timeout'
+            });
+          });
         })
     );
   }
