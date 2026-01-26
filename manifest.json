@@ -3,12 +3,12 @@
   "name": "Toastmasters Slot Booker",
   "icons": [
     {
-      "src": "/copy-of-toastmaster-slot-booker/logo.png",
+      "src": "/copy-of-toastmaster-slot-booker/public/logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/copy-of-toastmaster-slot-booker/logo.png",
+      "src": "/copy-of-toastmaster-slot-booker/public/logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
