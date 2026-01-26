@@ -1,8 +1,9 @@
 import { Meeting, User } from '../types';
 
 const getLogoUrl = () => {
-  // Use a data URI for the logo since logo.png may not exist
-  return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231e3a8a'/%3E%3Ctext x='50' y='60' font-size='40' fill='white' text-anchor='middle' font-family='Arial'%3ETM%3C/text%3E%3C/svg%3E";
+  const basePath = ((import.meta as any).env.BASE_URL || '/').replace(/\/$/, '');
+  // Use logo.png from public folder
+  return basePath ? `${basePath}/logo.png` : '/logo.png';
 };
 
 export const NotificationService = {
