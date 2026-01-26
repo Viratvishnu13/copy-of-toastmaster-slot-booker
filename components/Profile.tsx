@@ -304,13 +304,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none h-16"
                    />
                 </div>
-                <button
-                   onClick={handleSendTest}
-                   disabled={sendingNotif || permissionStatus !== 'granted'}
-                   className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
-                >
-                   {sendingNotif ? 'Sending...' : '🧪 Send Test Notification'}
-                </button>
              </div>
 
              {/* Send Custom Message */}
