@@ -1,6 +1,38 @@
 import { User, Meeting, Slot, DEFAULT_ROLES, SpeechDetails, RSVP, DEFAULT_AVATAR } from '../types';
 import { supabase } from './supabaseClient';
 
+// --- PUSH NOTIFICATION HELPERS ---
+const PUSH_SERVER_URL = 'https://toastmaster-push-server.vercel.app';
+
+// Helper 1: Broadcast to ALL users (e.g., New Meeting)
+const sendPushBroadcast = async (title: string, body: string) => {
+  try {
+    await fetch(`${PUSH_SERVER_URL}/api/send-push-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body }),
+    });
+    console.log("📢 Push broadcast sent");
+  } catch (error) {
+    console.error("❌ Failed to send push broadcast:", error);
+  }
+};
+
+// Helper 2: Notify a SPECIFIC user (e.g., Role Assigned)
+const sendPushToUser = async (userId: string, title: string, body: string) => {
+  try {
+    await fetch(`${PUSH_SERVER_URL}/api/send-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, title, body }),
+    });
+    console.log(`👤 Push sent to user ${userId}`);
+  } catch (error) {
+    console.error("❌ Failed to send user push:", error);
+  }
+};
+// ---------------------------------
+
 export const PATHWAYS = [
   "Dynamic Leadership",
   "Effective Coaching",
@@ -401,6 +433,17 @@ class Store {
       }
     }
 
+    // 🟢 NEW CODE: Send Push Notification to All Users
+    const dateStr = new Date(meetingPayload.date!).toLocaleDateString('en-US', { 
+      weekday: 'short', month: 'short', day: 'numeric' 
+    });
+    
+    await sendPushBroadcast(
+      "New Meeting Added! 📅",
+      `A new meeting has been scheduled for ${dateStr}. Book your slots now!`
+    );
+    // 🟢 END NEW CODE
+
     return this.getMeetingById(meetingData.id);
   }
 
@@ -451,7 +494,6 @@ class Store {
     // Auto-RSVP logic: If a user is taking a role, mark them as 'yes'
     if (userId) {
       // Fetch the user details to construct the RSVP object correctly
-      // We explicitly fetch to ensure we have the correct name and status
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, name, username, is_guest')
@@ -459,6 +501,7 @@ class Store {
         .single();
         
       if (!userError && userData) {
+        // ... (Existing RSVP Code) ...
         const rsvp: RSVP = {
           userId: userData.id,
           name: userData.name || userData.username || 'Member',
@@ -466,6 +509,23 @@ class Store {
           isGuest: !!userData.is_guest
         };
         await this.rsvpToMeeting(meetingId, rsvp);
+
+        // 🟢 NEW CODE: Notify the user they got the role
+        // We fetch the role name to make the message useful
+        const { data: slotData } = await supabase
+          .from('slots')
+          .select('role_name')
+          .eq('id', slotId)
+          .single();
+          
+        if (slotData) {
+          await sendPushToUser(
+            userId,
+            "Role Assigned! 🎭",
+            `You have been assigned the role of ${slotData.role_name}.`
+          );
+        }
+        // 🟢 END NEW CODE
       }
     }
   }
