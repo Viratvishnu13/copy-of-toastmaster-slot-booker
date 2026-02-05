@@ -110,38 +110,50 @@ export const PushService = {
     }
   },
 
-  /**
-   * Save subscription to database
-   */
-  saveSubscription: async (subscription: PushSubscription, userId: string): Promise<void> => {
-    const deviceId = DeviceService.getDeviceId();
-    const subscriptionData = subscription.toJSON();
+  // Inside services/pushService.ts
 
+  saveSubscription: async (subscription: PushSubscription, userId: string) => {
     try {
-      // Store push subscription in database
-      const { error } = await supabase
+      // DEBUG 1: Did we get a subscription object?
+      // alert("Step 1: Got subscription from browser"); 
+
+      const deviceId = await DeviceService.getDeviceId();
+      if (!deviceId) {
+        alert("❌ Error: Device ID is missing!");
+        return;
+      }
+      
+      // DEBUG 2: Preparing to save
+      // alert(`Step 2: Saving for Device ${deviceId}`);
+
+      // 3. Upsert to Supabase
+      const { data, error } = await supabase
         .from('push_subscriptions')
         .upsert({
-          device_id: deviceId,
+          device_id: deviceId, // This MUST match your DB column name
           user_id: userId,
-          endpoint: subscriptionData.endpoint,
-          p256dh: subscriptionData.keys?.p256dh,
-          auth: subscriptionData.keys?.auth,
-          updated_at: new Date().toISOString()
+          endpoint: subscription.endpoint,
+          p256dh: (subscription.getKey('p256dh') ? 
+            btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh') as ArrayBuffer) as any)) : ''),
+          auth: (subscription.getKey('auth') ? 
+            btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth') as ArrayBuffer) as any)) : '')
         }, {
           onConflict: 'device_id'
-        });
+        })
+        .select(); // Add .select() to see if it actually returns data
 
       if (error) {
-        console.error('Error saving push subscription:', error);
+        alert("❌ Database Error: " + error.message);
+        console.error("Supabase Error:", error);
       } else {
-        console.log('✅ Push subscription saved to database');
+        alert("✅ Database Success! Row saved.");
       }
-    } catch (error) {
-      console.error('Failed to save push subscription:', error);
+
+    } catch (err: any) {
+      alert("❌ Critical Crash: " + err.message);
     }
   },
-
+  
   /**
    * Delete subscription from database
    */
