@@ -1,7 +1,7 @@
 // Cache version with timestamp for automatic invalidation
-const CACHE_VERSION = 'tm-booker-v6';
+const CACHE_VERSION = 'tm-booker-v7';
 const CACHE_NAME = `${CACHE_VERSION}-${Date.now()}`;
-const BASE_PATH = '/copy-of-toastmaster-slot-booker';
+const BASE_PATH = '';
 
 // Check if we're in development mode (localhost or 127.0.0.1)
 const isDevelopment = self.location.hostname === 'localhost' || 
