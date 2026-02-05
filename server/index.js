@@ -24,22 +24,34 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'https://viratvishnu13.github.io',
     'http://localhost:3000',
-    'http://localhost:4173'
+    'http://localhost:4173',
+    'https://copy-of-toastmaster-slot-booker.vercel.app'
   ];
   
-  // Allow requests from GitHub Pages or localhost
-  if (origin && (allowedOrigins.some(allowed => origin.includes(allowed)) || origin.includes('github.io'))) {
+  // Logic: Is this a trusted origin?
+  // We trust: 
+  // 1. Exact matches in allowedOrigins
+  // 2. Any subdomains of vercel.app (for previews)
+  // 3. GitHub Pages
+  const isAllowed = origin && (
+    allowedOrigins.includes(origin) || 
+    origin.endsWith('.vercel.app') || 
+    origin.includes('github.io')
+  );
+
+  if (isAllowed) {
     res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
   } else {
+    // Fallback for tools like Postman (optional)
     res.header('Access-Control-Allow-Origin', '*');
+    // We do NOT set credentials to true here to avoid the conflict
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.header('Access-Control-Max-Age', '86400');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
