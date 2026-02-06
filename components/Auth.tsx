@@ -48,13 +48,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6 relative">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6 relative border border-gray-100">
         
         <div className="text-center">
-            <div className="mx-auto h-16 w-16 bg-blue-900 rounded-full flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
+            {/* 🟢 UPDATED: Official Logo */}
+            <div className="flex justify-center mb-4">
+                <img 
+                    src="/logo.png" 
+                    alt="Toastmasters International" 
+                    className="w-24 h-24 object-contain filter drop-shadow-sm" 
+                />
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900">Toastmasters</h2>
             <p className="mt-2 text-sm text-gray-600">Slot Booking System</p>
