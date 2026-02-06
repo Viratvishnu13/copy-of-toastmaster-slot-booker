@@ -146,7 +146,7 @@ export const PushService = {
         alert("❌ Database Error: " + error.message);
         console.error("Supabase Error:", error);
       } else {
-        alert("✅ Database Success! Row saved.");
+        alert("✅ Notification enabled successfully");
       }
 
     } catch (err: any) {
