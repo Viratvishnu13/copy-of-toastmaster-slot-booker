@@ -17,13 +17,13 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:4173',
-    FRONTEND_URL // Use the variable
+    FRONTEND_URL
   ];
   
   const isAllowed = origin && (
     allowedOrigins.includes(origin) || 
     origin.endsWith('.vercel.app') || 
-    origin.includes('github.io') // Kept for legacy safety
+    origin.includes('github.io')
   );
 
   if (isAllowed) {
@@ -78,28 +78,34 @@ app.post('/api/send-push', async (req, res) => {
     if (error) return res.status(500).json({ error: 'Failed to fetch subscriptions' });
     if (!subscriptions?.length) return res.status(404).json({ error: 'No subscriptions found' });
 
+    console.log(`[Push] Found ${subscriptions.length} devices for User ${userId}`);
+
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
-        // 🟢 FIX: Point to Vercel for icons and click URL
         const payload = JSON.stringify({
           title,
           body,
           icon: `${FRONTEND_URL}/logo.png`,
           badge: `${FRONTEND_URL}/logo.png`,
-          data: {
-            url: `${FRONTEND_URL}/`, // Clicking opens the Vercel app
-            ...data
-          }
+          data: { url: `${FRONTEND_URL}/`, ...data }
         });
 
         try {
+          // 🟡 LOGGING ADDED HERE
+          console.log(`👉 Sending to Device ID: ${sub.device_id}`);
+
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             payload
           );
+          
+          console.log(`✅ Success Device ID: ${sub.device_id}`);
           return { deviceId: sub.device_id, success: true };
         } catch (error) {
+          console.error(`❌ Failed Device ID: ${sub.device_id}`, error.message);
+
           if (error.statusCode === 410) {
+            console.log(`🗑️ Deleting invalid subscription: ${sub.device_id}`);
             await supabase.from('push_subscriptions').delete().eq('device_id', sub.device_id);
           }
           return { deviceId: sub.device_id, success: false, error: error.message };
@@ -129,28 +135,34 @@ app.post('/api/send-push-all', async (req, res) => {
     if (error) return res.status(500).json({ error: 'Failed to fetch subscriptions' });
     if (!subscriptions?.length) return res.status(404).json({ error: 'No subscriptions found' });
 
+    console.log(`[Push Broadcast] Sending to ALL ${subscriptions.length} subscriptions`);
+
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
-        // 🟢 FIX: Point to Vercel for icons and click URL
         const payload = JSON.stringify({
           title,
           body,
           icon: `${FRONTEND_URL}/logo.png`,
           badge: `${FRONTEND_URL}/logo.png`,
-          data: {
-            url: `${FRONTEND_URL}/`, // Clicking opens the Vercel app
-            ...data
-          }
+          data: { url: `${FRONTEND_URL}/`, ...data }
         });
 
         try {
+          // 🟡 LOGGING ADDED HERE
+          console.log(`👉 Broadcast to Device ID: ${sub.device_id}`);
+
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             payload
           );
+          
+          console.log(`✅ Success Device ID: ${sub.device_id}`);
           return { deviceId: sub.device_id, success: true };
         } catch (error) {
+          console.error(`❌ Failed Device ID: ${sub.device_id}`, error.message);
+
           if (error.statusCode === 410) {
+            console.log(`🗑️ Deleting invalid subscription: ${sub.device_id}`);
             await supabase.from('push_subscriptions').delete().eq('device_id', sub.device_id);
           }
           return { deviceId: sub.device_id, success: false, error: error.message };
