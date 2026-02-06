@@ -133,16 +133,6 @@ function App() {
 
   return (
     <div className="relative min-h-screen bg-gray-50 max-w-lg mx-auto shadow-2xl flex flex-col">
-      
-      {/* 🟢 NEW: Persistent App Header with Logo */}
-      <header className="bg-blue-900 text-white shadow-md sticky top-0 z-40 safe-area-top">
-          <div className="px-4 h-16 flex items-center space-x-3">
-             <img src="/logo.png" alt="Logo" className="w-8 h-8 filter drop-shadow-sm" />
-             <h1 className="text-lg font-bold tracking-wide">
-               TM <span className="text-blue-200">Booker</span>
-             </h1>
-          </div>
-      </header>
 
       {/* Install Prompt Banner (Below Header) */}
       {showInstallPrompt && (
