@@ -350,7 +350,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
       </div>
 
       <div className="text-center text-xs text-gray-300 pt-4">
-        Toastmaster Slot Booker v2.1
+        Toastmaster Slot Booker
+        <br></br>
+        Powered by HCL Pandyas
       </div>
     </div>
   );
