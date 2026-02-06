@@ -66,16 +66,15 @@ function App() {
 
     const runChecks = async () => {
       if (user) {
-        // 1. Initial Checks for Local Reminders (for all users including guests)
+        // 1. Initial Checks for Local Reminders
         const meetings = await dataService.getMeetings();
         NotificationService.checkForNewMeetings(meetings);
         
-        // Only check role reminders for non-guest users (guests don't have roles)
         if (!user.isGuest) {
           NotificationService.checkReminders(user, meetings);
         }
 
-        // 2. Realtime Subscription for Meetings (New Events) - All users can receive
+        // 2. Realtime Subscription for Meetings
         meetingsChannel = supabase.channel('public:meetings')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meetings' }, payload => {
             const newMeeting = payload.new as any;
@@ -84,12 +83,9 @@ function App() {
           .subscribe();
 
         // 3. Realtime Subscription for Custom Admin Notifications
-        // Guests can receive broadcast notifications (target_user_id === null)
         notificationChannel = supabase.channel('public:notifications')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
              const notif = payload.new as NotificationLog;
-             // Check if notification is for everyone (null) or specifically for this user
-             // Guests can only receive broadcast notifications (null target)
              if (notif.target_user_id === null || (!user.isGuest && notif.target_user_id === user.id)) {
                  NotificationService.send(notif.title, notif.body);
              }
@@ -108,7 +104,6 @@ function App() {
 
   const handleLogin = async (loggedInUser: User) => {
     setUser(loggedInUser);
-    // Register device with logged-in user
     if (!loggedInUser.isGuest) {
       const { DeviceService } = await import('./services/deviceService');
       DeviceService.registerDevice(loggedInUser.id);
@@ -116,7 +111,6 @@ function App() {
   };
 
   const handleLogout = async () => {
-    // Clear device registration
     if (user && !user.isGuest) {
       const { DeviceService } = await import('./services/deviceService');
       await DeviceService.clearDevice();
@@ -138,11 +132,22 @@ function App() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gray-50 max-w-lg mx-auto shadow-2xl">
-      {/* Install Prompt Banner */}
+    <div className="relative min-h-screen bg-gray-50 max-w-lg mx-auto shadow-2xl flex flex-col">
+      
+      {/* 🟢 NEW: Persistent App Header with Logo */}
+      <header className="bg-blue-900 text-white shadow-md sticky top-0 z-40 safe-area-top">
+          <div className="px-4 h-16 flex items-center space-x-3">
+             <img src="/logo.png" alt="Logo" className="w-8 h-8 filter drop-shadow-sm" />
+             <h1 className="text-lg font-bold tracking-wide">
+               TM <span className="text-blue-200">Booker</span>
+             </h1>
+          </div>
+      </header>
+
+      {/* Install Prompt Banner (Below Header) */}
       {showInstallPrompt && (
-        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-50 fixed top-0 left-0 right-0 max-w-lg mx-auto shadow-lg">
-          <span className="text-sm font-semibold">Install Toastmasters Booker app?</span>
+        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between z-30 shadow-inner">
+          <span className="text-sm font-semibold">Install App?</span>
           <div className="flex gap-2">
             <button
               onClick={handleInstallApp}
@@ -160,15 +165,15 @@ function App() {
         </div>
       )}
 
-      {/* Main Content - Scrollable with padding for fixed footer and optional banner */}
-      <div className={`pb-24 overflow-y-auto ${showInstallPrompt ? 'pt-16' : ''}`}>
+      {/* Main Content - Takes remaining height */}
+      <div className="flex-1 pb-24 overflow-y-auto">
         {currentTab === 'agenda' && <Agenda currentUser={user} />}
         {currentTab === 'calendar' && <CalendarView currentUser={user} />}
         {currentTab === 'profile' && <Profile user={user} onUpdate={handleUpdateUser} onLogout={handleLogout} />}
       </div>
 
       {/* Bottom Navigation - Fixed Footer */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 flex justify-around items-center h-20 z-50 shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 flex justify-around items-center h-20 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <button 
           onClick={() => setCurrentTab('agenda')}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-colors ${currentTab === 'agenda' ? 'text-blue-900 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
