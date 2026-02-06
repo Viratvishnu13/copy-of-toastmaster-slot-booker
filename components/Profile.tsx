@@ -265,20 +265,51 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
               onChange={e => setAdminMsg({...adminMsg, body: e.target.value})}
             />
             
-            <div className="flex items-center justify-between">
-              <label className="flex items-center text-sm text-gray-600">
+            {/* --- 🔴 RESTORED: User Selection List --- */}
+            {!adminMsg.sendToAll && (
+              <div className="max-h-40 overflow-y-auto border rounded-lg bg-gray-50 p-2 space-y-1 mb-2">
+                <p className="text-xs font-bold text-gray-500 mb-1 sticky top-0 bg-gray-50">Select Recipients:</p>
+                {allUsers.filter(u => !u.isGuest && u.id !== user.id).map(u => (
+                  <label key={u.id} className="flex items-center p-2 hover:bg-white rounded cursor-pointer border border-transparent hover:border-gray-200 transition-colors">
+                    <input 
+                      type="checkbox"
+                      checked={adminMsg.targetIds.includes(u.id)}
+                      onChange={e => {
+                        const newIds = e.target.checked 
+                          ? [...adminMsg.targetIds, u.id] 
+                          : adminMsg.targetIds.filter(id => id !== u.id);
+                        setAdminMsg({...adminMsg, targetIds: newIds});
+                      }}
+                      className="mr-3 h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-800">{u.name}</span>
+                      <span className="text-xs text-gray-400">{u.email}</span>
+                    </div>
+                  </label>
+                ))}
+                {allUsers.filter(u => !u.isGuest && u.id !== user.id).length === 0 && (
+                   <p className="text-xs text-gray-400 text-center py-2">No other members found.</p>
+                )}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
+              <label className="flex items-center text-sm text-gray-600 cursor-pointer select-none">
                 <input 
                   type="checkbox" 
                   checked={adminMsg.sendToAll} 
                   onChange={e => setAdminMsg({...adminMsg, sendToAll: e.target.checked})}
-                  className="mr-2" 
+                  className="mr-2 h-4 w-4 text-indigo-600 rounded" 
                 />
-                Send to Everyone ({allUsers.length})
+                <span className={adminMsg.sendToAll ? "font-bold text-indigo-600" : ""}>
+                  Send to Everyone
+                </span>
               </label>
               <button 
                 onClick={handleSendAnnouncement}
                 disabled={sending}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {sending ? 'Sending...' : 'Send Now 🚀'}
               </button>
@@ -319,7 +350,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdate, onLogout }) =>
       </div>
 
       <div className="text-center text-xs text-gray-300 pt-4">
-        Toastmaster Slot Booker v2.0
+        Toastmaster Slot Booker v2.1
       </div>
     </div>
   );
