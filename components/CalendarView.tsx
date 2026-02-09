@@ -160,30 +160,49 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
                   )}
                 </div>
                 
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-600 font-medium">
-                     <span className="font-bold text-gray-900">{yesCount}</span> Members Going
+                {/* Attendance Section */}
+                <div className="bg-gray-50 p-4 border-t border-gray-200 -mx-5 -mb-5 mt-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      Attendance 
+                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px]">
+                        {yesCount}
+                      </span>
+                    </h4>
+                    <button 
+                      onClick={() => openRsvpModal(meeting.id)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${
+                        myRsvp?.status === 'yes' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-500 hover:text-green-600'
+                      }`}
+                    >
+                      {myRsvp?.status === 'yes' ? '✓ Attending' : 'RSVP'}
+                    </button>
                   </div>
-                  
-                  <button 
-                    onClick={() => openRsvpModal(meeting.id)}
-                    className={`px-5 py-2 text-sm font-bold rounded-lg transition shadow-sm flex items-center gap-2 ${
-                      myRsvp 
-                        ? (myRsvp.status === 'yes' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200')
-                        : 'bg-blue-900 text-white hover:bg-blue-800'
-                    }`}
-                  >
-                    {myRsvp ? (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        <span>{myRsvp.status === 'yes' ? 'Going' : 'Not Going'}</span>
-                      </>
-                    ) : (
-                      <span>RSVP</span>
+
+                  {/* Attendance Faces */}
+                  <div className="flex flex-wrap gap-2">
+                    {meeting.rsvps.filter((r) => r.status === 'yes').map((rsvp, i) => (
+                      <div key={i} className="relative group">
+                        {!rsvp.isGuest ? (
+                           <img 
+                             src={`https://ui-avatars.com/api/?name=${rsvp.name}&background=random`} 
+                             alt={rsvp.name} 
+                             className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                           />
+                        ) : (
+                           <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 select-none cursor-default" title={rsvp.name}>
+                             {(rsvp.name || 'G').charAt(0).toUpperCase()}
+                           </div>
+                        )}
+                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap mb-1 z-10">
+                          {rsvp.name || 'Guest'}
+                        </span>
+                      </div>
+                    ))}
+                    {(!meeting.rsvps || meeting.rsvps.filter((r) => r.status === 'yes').length === 0) && (
+                      <span className="text-xs text-gray-400 italic">Be the first to RSVP!</span>
                     )}
-                  </button>
+                  </div>
                 </div>
 
                 {/* Admin View of RSVPs */}

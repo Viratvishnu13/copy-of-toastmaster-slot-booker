@@ -431,59 +431,7 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
                   </div>
               </div>
 
-              {/* BOTTOM: RSVP Section (Merged) */}
-              <div className="bg-gray-50 p-4 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      Attendance 
-                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px]">
-                        {rsvpList.filter(r => r.status === 'yes').length}
-                      </span>
-                    </h4>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleRSVP(currentMeeting.id, 'yes')}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'yes' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-500 hover:text-green-600'}`}
-                      >
-                        Yes, Attending
-                      </button>
-                      {!currentUser.isGuest && (
-                          <button 
-                             onClick={() => handleRSVP(currentMeeting.id, 'no')}
-                             className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'no' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-red-500 hover:text-red-600'}`}
-                          >
-                            No
-                          </button>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* RSVP FACES */}
-                  <div className="flex flex-wrap gap-2">
-                    {rsvpList.filter((r) => r.status === 'yes').map((rsvp, i) => (
-                      <div key={i} className="relative group">
-                        {/* Guest Name vs User Avatar */}
-                        {!rsvp.isGuest ? (
-                           <img 
-                             src={rsvp.userId ? `https://ui-avatars.com/api/?name=${rsvp.name}&background=random` : `https://ui-avatars.com/api/?name=${rsvp.name}&background=random`} 
-                             alt={rsvp.name} 
-                             className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
-                           />
-                        ) : (
-                           <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 select-none cursor-default" title={rsvp.name}>
-                             {(rsvp.name || 'G').charAt(0).toUpperCase()}
-                           </div>
-                        )}
-                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap mb-1 z-10">
-                          {rsvp.name || 'Guest'}
-                        </span>
-                      </div>
-                    ))}
-                    {(!rsvpList || rsvpList.filter((r) => r.status === 'yes').length === 0) && (
-                      <span className="text-xs text-gray-400 italic">Be the first to RSVP!</span>
-                    )}
-                  </div>
-              </div>
            </div>
 
            {/* Slots Grid */}
