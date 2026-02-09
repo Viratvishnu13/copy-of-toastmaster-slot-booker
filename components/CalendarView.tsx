@@ -73,11 +73,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
   };
 
   const openRsvpModal = (meetingId: string) => {
-    // RLS Restriction: Guests cannot write to DB
-    if (currentUser.isGuest) {
-        alert("Please sign in to RSVP. Guests cannot RSVP directly.");
-        return;
-    }
     setRsvpMeetingId(meetingId);
     setGuestName(currentUser.isGuest ? '' : currentUser.name);
     setShowRsvpModal(true);
@@ -86,14 +81,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
   const handleSubmitRsvp = async (status: RSVPStatus) => {
     if (!rsvpMeetingId) return;
     
-    const rsvpPayload: RSVP = {
-      userId: currentUser.id,
-      name: currentUser.name,
-      status: status,
-      isGuest: false // Guests blocked at entry
-    };
+    // For guests, require name input
+    const name = currentUser.isGuest ? guestName.trim() : currentUser.name;
+    if (!name) {
+      alert("Please enter your name to RSVP.");
+      return;
+    }
 
-    await dataService.rsvpToMeeting(rsvpMeetingId, rsvpPayload);
+    await dataService.rsvpToMeeting(rsvpMeetingId, currentUser.id, status, currentUser.isGuest ? name : undefined);
     
     setShowRsvpModal(false);
     setRsvpMeetingId(null);
@@ -251,6 +246,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
            <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6">
              <h3 className="text-lg font-bold mb-4 text-gray-900">Confirm Attendance</h3>
              
+             {currentUser.isGuest && (
+               <div className="mb-4">
+                 <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name *</label>
+                 <input
+                   type="text"
+                   value={guestName}
+                   onChange={(e) => setGuestName(e.target.value)}
+                   placeholder="Enter your name"
+                   autoFocus
+                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                 />
+               </div>
+             )}
+             
              <div className="flex flex-col gap-3">
                <button 
                  onClick={() => handleSubmitRsvp('yes')}
@@ -265,7 +274,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ currentUser }) => {
                  Maybe Next Time
                </button>
                <button 
-                 onClick={() => { setShowRsvpModal(false); setRsvpMeetingId(null); }}
+                 onClick={() => { setShowRsvpModal(false); setRsvpMeetingId(null); setGuestName(''); }}
                  className="w-full text-gray-400 text-xs hover:text-gray-600 mt-2"
                >
                  Cancel
