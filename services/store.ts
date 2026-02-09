@@ -584,8 +584,7 @@ class Store {
         meeting_id: meetingId,
         user_id: isGuest ? null : userId,
         guest_name: isGuest ? guestName : null, // Save name only for guests
-        status: status,
-        created_at: new Date().toISOString()
+        status: status
       };
 
       // 🟢 DATABASE LOGIC:
