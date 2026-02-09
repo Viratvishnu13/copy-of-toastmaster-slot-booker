@@ -262,19 +262,15 @@ const mapMeetingFromDB = (m: any): Meeting => {
     return a.id.localeCompare(b.id);
   });
 
-  // Handle Joined RSVPs (Best for RLS)
+ // Handle Joined RSVPs (Best for RLS)
   let rsvps: RSVP[] = [];
   if (m.rsvps && Array.isArray(m.rsvps)) {
     rsvps = m.rsvps.map((r: any) => ({
-      userId: r.user_id,
-      name: r.name,
+      userId: r.user_id, // Can be null now
+      name: r.guest_name || r.name, // 🟢 FIX: Use guest_name if available
       status: r.status,
-      isGuest: r.is_guest
+      isGuest: !r.user_id // 🟢 FIX: If no User ID, it's a guest
     }));
-  } 
-  // Fallback for legacy JSON column
-  else if (m.rsvp_list && Array.isArray(m.rsvp_list)) {
-    rsvps = m.rsvp_list;
   }
 
   // --- AUTO-RSVP SYNC ---
@@ -508,7 +504,7 @@ class Store {
           status: 'yes',
           isGuest: !!userData.is_guest
         };
-        await this.rsvpToMeeting(meetingId, rsvp);
+        await this.rsvpToMeeting(meetingId, userData.id, 'yes');          
 
         // 🟢 NEW CODE: Notify the user they got the role
         // We fetch the role name to make the message useful
@@ -578,23 +574,36 @@ class Store {
     await supabase.from('slots').delete().eq('id', slotId);
   }
 
-  // RLS-Friendly RSVP: Upsert to 'rsvps' table
-  async rsvpToMeeting(meetingId: string, rsvp: RSVP): Promise<void> {
-    const payload = {
-      meeting_id: meetingId,
-      user_id: rsvp.userId,
-      name: rsvp.name,
-      status: rsvp.status,
-      is_guest: rsvp.isGuest
-    };
+  // Updated to handle Guests (Insert) vs Members (Upsert)
+  async rsvpToMeeting(meetingId: string, userId: string, status: 'yes' | 'no' | 'maybe', guestName?: string) {
+    try {
+      // 🟢 Logic: Check if it's a guest session ID or explicit guest
+      const isGuest = userId.startsWith('guest-');
+      
+      const payload = {
+        meeting_id: meetingId,
+        user_id: isGuest ? null : userId,
+        guest_name: isGuest ? guestName : null, // Save name only for guests
+        status: status,
+        created_at: new Date().toISOString()
+      };
 
-    // Upsert matches on (meeting_id, user_id) PK
-    const { error } = await supabase
-      .from('rsvps')
-      .upsert(payload);
-
-    if (error) {
-      console.error("Error saving RSVP:", error);
+      // 🟢 DATABASE LOGIC:
+      // Guests: Always INSERT (new row for every guest)
+      // Members: UPSERT (update their existing row)
+      
+      if (isGuest) {
+        const { error } = await supabase.from('rsvps').insert(payload);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('rsvps').upsert(payload, { onConflict: 'meeting_id, user_id' });
+        if (error) throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving RSVP:', error);
+      return false;
     }
   }
 

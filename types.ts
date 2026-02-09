@@ -1,8 +1,7 @@
-
 export interface User {
   id: string;
   username: string;
-  email?: string; // Added email field
+  email?: string;
   name: string;
   avatar: string;
   isAdmin: boolean;
@@ -18,16 +17,18 @@ export interface SpeechDetails {
 
 export interface Slot {
   id: string;
-  roleName: string; // e.g., "Toastmaster of the Day", "Speaker 1"
-  userId: string | null; // null if open
-  isLocked?: boolean; // If admin locks a slot
+  roleName: string;
+  userId: string | null;
+  isLocked?: boolean;
   speechDetails?: SpeechDetails;
 }
 
-export type RSVPStatus = 'yes' | 'maybe';
+// 🟢 UPDATE: Added 'no' to status
+export type RSVPStatus = 'yes' | 'maybe' | 'no';
 
 export interface RSVP {
-  userId: string;
+  // 🟢 UPDATE: Allow null for guests
+  userId: string | null;
   name: string;
   status: RSVPStatus;
   isGuest: boolean;
@@ -35,8 +36,8 @@ export interface RSVP {
 
 export interface Meeting {
   id: string;
-  date: string; // ISO Date string
-  title: string; // e.g. "Weekly Meeting #104"
+  date: string;
+  title: string;
   type: 'Regular' | 'Special' | 'Contest';
   slots: Slot[];
   theme?: string;
@@ -50,16 +51,16 @@ export interface NotificationLog {
   id: string;
   title: string;
   body: string;
-  sent_by_user_id?: string; // Optional: who sent the notification
-  target_user_id: string | null; // null means 'everyone'
+  sent_by_user_id?: string;
+  target_user_id: string | null;
   created_at: string;
 }
 
 export interface Device {
-  id: string; // Device fingerprint/ID
-  user_id: string | null; // Currently logged-in user (null if guest or logged out)
-  last_login_at: string; // Last time a user logged in on this device
-  user_agent: string; // Browser info
+  id: string;
+  user_id: string | null;
+  last_login_at: string;
+  user_agent: string;
   created_at: string;
   updated_at: string;
 }

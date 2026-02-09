@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Meeting, Slot, User } from '../types';
 import { dataService, PATHWAYS, LEVELS, getProjects } from '../services/store';
 
-// Simple formatting since we can't guarantee date-fns install in this environment
+// Simple formatting
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -141,31 +140,52 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
     };
 
     fetchData();
-  }, [isRefresh]); // Remove selectedMeetingId from dep array to avoid infinite loops on selection change
+  }, [isRefresh]); 
 
   const currentMeeting = meetings.find(m => m.id === selectedMeetingId);
 
   // Helper to find user in our local cache
   const getUser = (id: string | null) => users.find(u => u.id === id);
 
+  // --- ACTIONS ---
+
   const handleBook = async (slot: Slot) => {
-    if (!currentMeeting || currentUser.isGuest) return;
+    if (!currentMeeting || currentUser.isGuest) return alert("Please login to book roles.");
 
     if (slot.roleName.toLowerCase().includes('speaker')) {
       setBookingSlot(slot);
       setSpeakerForm({ pathway: '', level: 'Level 1', project: '', title: '' });
       setShowSpeakerModal(true);
     } else {
+      if (!window.confirm(`Confirm booking role: ${slot.roleName}?`)) return;
       await dataService.assignSlot(currentMeeting.id, slot.id, currentUser.id);
       setIsRefresh(prev => prev + 1);
     }
   };
 
   const handleUnbook = async (slotId: string) => {
-    if (!currentMeeting || currentUser.isGuest) return;
+    if (!currentMeeting) return;
+    if (!window.confirm("Are you sure you want to drop this role?")) return;
     await dataService.assignSlot(currentMeeting.id, slotId, null);
     setIsRefresh(prev => prev + 1);
   };
+
+  // 🟢 NEW: RSVP Action with Guest Prompt
+  const handleRSVP = async (meetingId: string, status: 'yes' | 'no' | 'maybe') => {
+    let guestName = undefined;
+
+    // Guest Logic: Ask for name
+    if (currentUser.isGuest) {
+      const nameInput = prompt("👋 Welcome! Please enter your name to join the Guest List:");
+      if (!nameInput || nameInput.trim() === "") return; // Cancelled
+      guestName = nameInput.trim();
+    }
+
+    await dataService.rsvpToMeeting(meetingId, currentUser.id, status, guestName);
+    setIsRefresh(prev => prev + 1);
+  };
+
+  // --- ADMIN ACTIONS ---
 
   const handleAdminAssign = async (userId: string) => {
     if (!selectedMeetingForSlot || !selectedSlot) return;
@@ -245,7 +265,6 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
 
   const handleAddSpeaker = async () => {
     if (!currentMeeting) return;
-    // Uses the new method to add both Speaker and Evaluator
     await dataService.addSpeakerAndEvaluator(currentMeeting.id);
     setIsRefresh(prev => prev + 1);
   };
@@ -291,6 +310,13 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
       return <div className="p-8 text-center text-gray-500">Loading Agenda...</div>;
   }
 
+  // Helper for RSVPs
+  const rsvpList = currentMeeting ? (currentMeeting.rsvps || []) : [];
+  // Find my RSVP (Handle Guest Name logic or User ID)
+  const myRsvp = currentUser.isGuest 
+      ? null 
+      : rsvpList.find((r) => r.userId === currentUser.id);
+
   return (
     <div>
       {/* Header */}
@@ -314,7 +340,7 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
         )}
       </div>
 
-      {/* Date Selector */}
+      {/* Date Selector (Horizontal) */}
       <div className="flex overflow-x-auto no-scrollbar p-4 gap-3 bg-gray-50">
         {meetings.map(m => (
           <button
@@ -333,9 +359,10 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
         ))}
       </div>
 
-      {/* Meeting Details */}
+      {/* Meeting Content */}
       {currentMeeting ? (
-        <div className="px-4 mt-2">
+        <div className="px-4 mt-2 pb-24">
+           {/* Meeting Info Card */}
            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
               <div className="flex justify-between items-start border-b border-gray-200 pb-3 mb-3">
                 <div>
@@ -397,6 +424,55 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
                       </div>
                    </div>
                  )}
+              </div>
+           </div>
+
+           {/* 🟢 NEW: RSVP SECTION */}
+           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Attendance</h4>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => handleRSVP(currentMeeting.id, 'yes')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'yes' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-500 hover:text-green-600'}`}
+                  >
+                    Yes, Attending
+                  </button>
+                  {!currentUser.isGuest && (
+                      <button 
+                         onClick={() => handleRSVP(currentMeeting.id, 'no')}
+                         className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'no' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-red-500 hover:text-red-600'}`}
+                      >
+                        No
+                      </button>
+                  )}
+                </div>
+              </div>
+
+              {/* RSVP FACES */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {rsvpList.filter((r) => r.status === 'yes').map((rsvp, i) => (
+                  <div key={i} className="relative group">
+                    {/* Guest Name vs User Avatar */}
+                    {!rsvp.isGuest ? (
+                       <img 
+                         src={rsvp.userId ? `https://ui-avatars.com/api/?name=${rsvp.name}&background=random` : `https://ui-avatars.com/api/?name=${rsvp.name}&background=random`} 
+                         alt={rsvp.name} 
+                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                       />
+                    ) : (
+                       <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 select-none cursor-default" title={rsvp.name}>
+                         {(rsvp.name || 'G').charAt(0).toUpperCase()}
+                       </div>
+                    )}
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap mb-1 z-10">
+                      {rsvp.name || 'Guest'}
+                    </span>
+                  </div>
+                ))}
+                {(!rsvpList || rsvpList.filter((r) => r.status === 'yes').length === 0) && (
+                  <span className="text-xs text-gray-400 italic">Be the first to RSVP!</span>
+                )}
               </div>
            </div>
 
@@ -481,6 +557,11 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
                          </svg>
                          <span className="text-xs font-bold">Leave</span>
                        </button>
+                     )}
+                     
+                     {/* GUEST Login Prompt */}
+                     {(!assignedUser && currentUser.isGuest) && (
+                        <span className="text-xs text-gray-400 italic pr-2">Login to book</span>
                      )}
 
                      {currentUser.isAdmin && (
