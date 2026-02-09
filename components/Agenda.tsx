@@ -170,7 +170,7 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
     setIsRefresh(prev => prev + 1);
   };
 
-  // 🟢 NEW: RSVP Action with Guest Prompt
+  // RSVP Action with Guest Prompt
   const handleRSVP = async (meetingId: string, status: 'yes' | 'no' | 'maybe') => {
     let guestName = undefined;
 
@@ -362,117 +362,127 @@ export const Agenda: React.FC<AgendaProps> = ({ currentUser }) => {
       {/* Meeting Content */}
       {currentMeeting ? (
         <div className="px-4 mt-2 pb-24">
-           {/* Meeting Info Card */}
-           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
-              <div className="flex justify-between items-start border-b border-gray-200 pb-3 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-bold text-gray-900">{currentMeeting.title}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${currentMeeting.type === 'Regular' ? 'bg-blue-100 text-blue-900' : 'bg-purple-100 text-purple-900'}`}>
-                      {currentMeeting.type}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 flex items-center gap-1 font-medium">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    {formatDate(currentMeeting.date)}
-                  </p>
-                </div>
-                {currentUser.isAdmin && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteMeeting}
-                    className="text-gray-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
-                    title="Delete Meeting"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-4 text-sm">
-                 <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+           
+           {/* 🟢 UNIFIED MEETING CARD (Info + RSVP) */}
+           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4 overflow-hidden">
+              
+              {/* TOP: Meeting Details */}
+              <div className="p-4 pb-2">
+                  <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-3">
                     <div>
-                      <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Venue</span>
-                      <span className="text-gray-900 font-medium">{currentMeeting.venue || 'TBD'}</span>
-                    </div>
-                 </div>
-                 <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <div>
-                      <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Time</span>
-                      <span className="text-gray-900 font-medium">{currentMeeting.time || 'TBD'}</span>
-                    </div>
-                 </div>
-                 {currentMeeting.theme && (
-                   <div className="flex items-start gap-2 mt-2 md:mt-0">
-                      <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                      <div>
-                        <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Theme</span>
-                        <span className="text-indigo-700 font-bold">{currentMeeting.theme}</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-gray-900">{currentMeeting.title}</h3>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${currentMeeting.type === 'Regular' ? 'bg-blue-100 text-blue-900' : 'bg-purple-100 text-purple-900'}`}>
+                          {currentMeeting.type}
+                        </span>
                       </div>
-                   </div>
-                 )}
-                 {currentMeeting.wordOfTheDay && (
-                   <div className="flex items-start gap-2 mt-2 md:mt-0">
-                      <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-                      <div>
-                        <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Word of the Day</span>
-                        <span className="text-pink-700 font-bold italic">"{currentMeeting.wordOfTheDay}"</span>
-                      </div>
-                   </div>
-                 )}
-              </div>
-           </div>
-
-           {/* 🟢 NEW: RSVP SECTION */}
-           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Attendance</h4>
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => handleRSVP(currentMeeting.id, 'yes')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'yes' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-500 hover:text-green-600'}`}
-                  >
-                    Yes, Attending
-                  </button>
-                  {!currentUser.isGuest && (
-                      <button 
-                         onClick={() => handleRSVP(currentMeeting.id, 'no')}
-                         className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'no' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-red-500 hover:text-red-600'}`}
+                      <p className="text-sm text-gray-600 flex items-center gap-1 font-medium">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        {formatDate(currentMeeting.date)}
+                      </p>
+                    </div>
+                    {currentUser.isAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteMeeting}
+                        className="text-gray-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        title="Delete Meeting"
                       >
-                        No
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
-                  )}
-                </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4 text-sm mb-2">
+                    <div className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <div>
+                          <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Venue</span>
+                          <span className="text-gray-900 font-medium">{currentMeeting.venue || 'TBD'}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div>
+                          <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Time</span>
+                          <span className="text-gray-900 font-medium">{currentMeeting.time || 'TBD'}</span>
+                        </div>
+                    </div>
+                    {currentMeeting.theme && (
+                      <div className="flex items-start gap-2 mt-1 md:mt-0">
+                          <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                          <div>
+                            <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Theme</span>
+                            <span className="text-indigo-700 font-bold">{currentMeeting.theme}</span>
+                          </div>
+                      </div>
+                    )}
+                    {currentMeeting.wordOfTheDay && (
+                      <div className="flex items-start gap-2 mt-1 md:mt-0">
+                          <svg className="w-4 h-4 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                          <div>
+                            <span className="block text-xs text-gray-500 uppercase font-bold tracking-wide">Word of the Day</span>
+                            <span className="text-pink-700 font-bold italic">"{currentMeeting.wordOfTheDay}"</span>
+                          </div>
+                      </div>
+                    )}
+                  </div>
               </div>
 
-              {/* RSVP FACES */}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {rsvpList.filter((r) => r.status === 'yes').map((rsvp, i) => (
-                  <div key={i} className="relative group">
-                    {/* Guest Name vs User Avatar */}
-                    {!rsvp.isGuest ? (
-                       <img 
-                         src={rsvp.userId ? `https://ui-avatars.com/api/?name=${rsvp.name}&background=random` : `https://ui-avatars.com/api/?name=${rsvp.name}&background=random`} 
-                         alt={rsvp.name} 
-                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
-                       />
-                    ) : (
-                       <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 select-none cursor-default" title={rsvp.name}>
-                         {(rsvp.name || 'G').charAt(0).toUpperCase()}
-                       </div>
-                    )}
-                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap mb-1 z-10">
-                      {rsvp.name || 'Guest'}
-                    </span>
+              {/* BOTTOM: RSVP Section (Merged) */}
+              <div className="bg-gray-50 p-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      Attendance 
+                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px]">
+                        {rsvpList.filter(r => r.status === 'yes').length}
+                      </span>
+                    </h4>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleRSVP(currentMeeting.id, 'yes')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'yes' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-500 hover:text-green-600'}`}
+                      >
+                        Yes, Attending
+                      </button>
+                      {!currentUser.isGuest && (
+                          <button 
+                             onClick={() => handleRSVP(currentMeeting.id, 'no')}
+                             className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all active:scale-95 ${myRsvp?.status === 'no' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-red-500 hover:text-red-600'}`}
+                          >
+                            No
+                          </button>
+                      )}
+                    </div>
                   </div>
-                ))}
-                {(!rsvpList || rsvpList.filter((r) => r.status === 'yes').length === 0) && (
-                  <span className="text-xs text-gray-400 italic">Be the first to RSVP!</span>
-                )}
+
+                  {/* RSVP FACES */}
+                  <div className="flex flex-wrap gap-2">
+                    {rsvpList.filter((r) => r.status === 'yes').map((rsvp, i) => (
+                      <div key={i} className="relative group">
+                        {/* Guest Name vs User Avatar */}
+                        {!rsvp.isGuest ? (
+                           <img 
+                             src={rsvp.userId ? `https://ui-avatars.com/api/?name=${rsvp.name}&background=random` : `https://ui-avatars.com/api/?name=${rsvp.name}&background=random`} 
+                             alt={rsvp.name} 
+                             className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                           />
+                        ) : (
+                           <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 select-none cursor-default" title={rsvp.name}>
+                             {(rsvp.name || 'G').charAt(0).toUpperCase()}
+                           </div>
+                        )}
+                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap mb-1 z-10">
+                          {rsvp.name || 'Guest'}
+                        </span>
+                      </div>
+                    ))}
+                    {(!rsvpList || rsvpList.filter((r) => r.status === 'yes').length === 0) && (
+                      <span className="text-xs text-gray-400 italic">Be the first to RSVP!</span>
+                    )}
+                  </div>
               </div>
            </div>
 
